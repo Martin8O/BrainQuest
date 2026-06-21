@@ -2,6 +2,9 @@
 # Claude's durable memory + working notes live here (NOT in ~/.claude or C:\).
 local/
 
+# ── Personal Claude Code settings (machine paths; enforced guardrails) ──────
+.claude/settings.local.json
+
 # ── Dependencies ───────────────────────────────────────────────────────────
 /node_modules
 /.pnp
