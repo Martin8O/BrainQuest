@@ -1,0 +1,36 @@
+# ── Private working area — LOCAL ONLY, never synced to GitHub ──────────────
+# Claude's durable memory + working notes live here (NOT in ~/.claude or C:\).
+local/
+
+# ── Dependencies ───────────────────────────────────────────────────────────
+/node_modules
+/.pnp
+.pnp.*
+
+# ── Next.js / build output ─────────────────────────────────────────────────
+/.next/
+/out/
+/build
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ── Testing ────────────────────────────────────────────────────────────────
+/coverage
+
+# ── Python (any local tooling/probes) ──────────────────────────────────────
+.venv/
+__pycache__/
+*.pyc
+
+# ── Env / secrets ──────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Deploy / misc ──────────────────────────────────────────────────────────
+.vercel
+.DS_Store
+Thumbs.db
+*.pem
+npm-debug.log*
