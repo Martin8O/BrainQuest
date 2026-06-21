@@ -17,7 +17,8 @@ Phase 0 done (analysis + locked design + plan). Building from **A1**. Plan: `loc
 - **This repo** `D:\Projekty\BrainQuest` → GitHub `https://github.com/Martin8O/BrainQuest.git` (sync target).
 - **`local/`** (gitignored) — the ONLY private home: Claude's memory, bootstrap, plan, prompt standard, scratch.
 - **`<vault>`** — the CONTENT SOURCE (Obsidian vault). App reads it; the teaching layer writes
-  learning/concept/hub notes into it (§11). Never refactor its existing notes without Martin's OK.
+  learning/concept/hub notes into it (§11) **freely — no need to ask** (Martin authorized 2026-06-22). Just
+  don't wholesale-refactor unrelated existing notes without a heads-up.
 - **`data/`** (in repo) — app review state + progress (synced). **Secrets/API keys → `local/` only.**
 
 ## 4. Architecture (see `docs/architecture.md`)
@@ -57,9 +58,8 @@ Martin's explicit standing instruction OVERRIDES the default: store **NOTHING** 
 ## 10. Hard rules
 - `local/` and `data/` NEVER go to git. No secrets/keys/`.env`/`node_modules` committed. Scope every commit
   (`git status` first; no blind `git add -A`).
-- `vault`'s existing notes are not refactored without approval; the teaching layer (§11) is the one write path.
-- "X is done" pre-authorizes commit; **pushing to GitHub is an outward action — confirm it separately** until
-  Martin says "push freely".
+- Teaching-layer writes to `vault` are free (§11); avoid wholesale refactors of unrelated notes without a heads-up.
+- **"X is done" pre-authorizes commit + push** (Martin's confirmed workflow, 2026-06-22). Still scope every commit.
 
 ## 11. Teaching layer — ALWAYS ON
 Martin is a motivated **learner** learning toward an AI/tech career; the build must teach him. Governed by
