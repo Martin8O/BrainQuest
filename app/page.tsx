@@ -3,6 +3,7 @@ import { readVault } from "@/lib/vault/reader";
 import type { Card, ConceptNote, LearningNote } from "@/lib/vault/types";
 import { loadReviewStore } from "@/lib/srs/store";
 import { ensureStates, selectDue } from "@/lib/srs/scheduler";
+import { computeProgress } from "@/lib/progress/mastery";
 
 // Read the vault fresh on every request — it grows as Martin learns, so never prerender.
 export const dynamic = "force-dynamic";
@@ -25,6 +26,9 @@ export default async function Home() {
     now,
   ).length;
 
+  // Overall mastery — the "how much do I know" headline, links to the full progress view.
+  const masteryPct = Math.round(computeProgress(vault.harvest, vault.learning, store).overall.avgStrength * 100);
+
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
       <header className="mb-8">
@@ -36,22 +40,39 @@ export default async function Home() {
         <p className="mt-2 font-mono text-xs text-zinc-500">📂 {vault.vaultPath}</p>
       </header>
 
-      <Link
-        href="/session"
-        className="mb-10 flex items-center justify-between gap-4 rounded-2xl border border-indigo-300 bg-indigo-50 p-5 transition hover:border-indigo-400 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/50 dark:hover:bg-indigo-950"
-      >
-        <div>
-          <div className="text-lg font-semibold">📚 Start daily session</div>
-          <div className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
-            {dueCount > 0
-              ? `${dueCount} ${dueCount === 1 ? "card" : "cards"} due — flip, recall, grade.`
-              : "Nothing due right now — you're all caught up."}
+      <div className="mb-10 grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/session"
+          className="flex items-center justify-between gap-4 rounded-2xl border border-indigo-300 bg-indigo-50 p-5 transition hover:border-indigo-400 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/50 dark:hover:bg-indigo-950"
+        >
+          <div>
+            <div className="text-lg font-semibold">📚 Start daily session</div>
+            <div className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+              {dueCount > 0
+                ? `${dueCount} ${dueCount === 1 ? "card" : "cards"} due — flip, recall, grade.`
+                : "Nothing due right now — you're all caught up."}
+            </div>
           </div>
-        </div>
-        <span className="shrink-0 rounded-full bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white">
-          {dueCount} due →
-        </span>
-      </Link>
+          <span className="shrink-0 rounded-full bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white">
+            {dueCount} due →
+          </span>
+        </Link>
+
+        <Link
+          href="/progress"
+          className="flex items-center justify-between gap-4 rounded-2xl border border-emerald-300 bg-emerald-50 p-5 transition hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/50 dark:hover:bg-emerald-950"
+        >
+          <div>
+            <div className="text-lg font-semibold">📊 View progress</div>
+            <div className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+              How much you know vs. what&apos;s ahead.
+            </div>
+          </div>
+          <span className="shrink-0 rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white">
+            {masteryPct}% →
+          </span>
+        </Link>
+      </div>
 
       {!vault.ok && (
         <div className="mb-8 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
