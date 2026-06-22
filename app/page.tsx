@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { readVault } from "@/lib/vault/reader";
 import type { Card, ConceptNote, LearningNote } from "@/lib/vault/types";
+import { loadReviewStore } from "@/lib/srs/store";
+import { ensureStates, selectDue } from "@/lib/srs/scheduler";
 
 // Read the vault fresh on every request — it grows as Martin learns, so never prerender.
 export const dynamic = "force-dynamic";
@@ -7,8 +10,20 @@ export const dynamic = "force-dynamic";
 const CARD_PREVIEW_COUNT = 12;
 
 export default async function Home() {
+  const now = new Date();
   const vault = await readVault();
   const { cards, recall, graph } = vault.harvest;
+
+  // How many cards are due right now — drives the "start session" call to action.
+  const store = await loadReviewStore();
+  const dueCount = selectDue(
+    ensureStates(
+      store,
+      cards.map((c) => c.id),
+      now,
+    ),
+    now,
+  ).length;
 
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
@@ -20,6 +35,23 @@ export default async function Home() {
         </p>
         <p className="mt-2 font-mono text-xs text-zinc-500">📂 {vault.vaultPath}</p>
       </header>
+
+      <Link
+        href="/session"
+        className="mb-10 flex items-center justify-between gap-4 rounded-2xl border border-indigo-300 bg-indigo-50 p-5 transition hover:border-indigo-400 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/50 dark:hover:bg-indigo-950"
+      >
+        <div>
+          <div className="text-lg font-semibold">📚 Start daily session</div>
+          <div className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+            {dueCount > 0
+              ? `${dueCount} ${dueCount === 1 ? "card" : "cards"} due — flip, recall, grade.`
+              : "Nothing due right now — you're all caught up."}
+          </div>
+        </div>
+        <span className="shrink-0 rounded-full bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white">
+          {dueCount} due →
+        </span>
+      </Link>
 
       {!vault.ok && (
         <div className="mb-8 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
