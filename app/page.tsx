@@ -40,7 +40,7 @@ export default async function Home() {
         <p className="mt-2 font-mono text-xs text-zinc-500">📂 {vault.vaultPath}</p>
       </header>
 
-      <div className="mb-10 grid gap-3 sm:grid-cols-2">
+      <div className="mb-10 grid gap-3 sm:grid-cols-3">
         <Link
           href="/session"
           className="flex items-center justify-between gap-4 rounded-2xl border border-indigo-300 bg-indigo-50 p-5 transition hover:border-indigo-400 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/50 dark:hover:bg-indigo-950"
@@ -70,6 +70,21 @@ export default async function Home() {
           </div>
           <span className="shrink-0 rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white">
             {masteryPct}% →
+          </span>
+        </Link>
+
+        <Link
+          href="/map"
+          className="flex items-center justify-between gap-4 rounded-2xl border border-violet-300 bg-violet-50 p-5 transition hover:border-violet-400 hover:bg-violet-100 dark:border-violet-900 dark:bg-violet-950/50 dark:hover:bg-violet-950"
+        >
+          <div>
+            <div className="text-lg font-semibold">🗺️ Skill tree</div>
+            <div className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+              Every concept and how they connect.
+            </div>
+          </div>
+          <span className="shrink-0 rounded-full bg-violet-600 px-3 py-1.5 text-sm font-medium text-white">
+            {vault.concepts.length} →
           </span>
         </Link>
       </div>

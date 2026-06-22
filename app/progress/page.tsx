@@ -9,12 +9,15 @@ import type { ClusterProgress, ConceptMastery, MasteryLevel } from "@/lib/progre
 
 export const dynamic = "force-dynamic";
 
-/** Visual treatment per mastery level — label + Tailwind classes for chips and the legend. */
+/**
+ * Visual treatment per mastery level — label + Tailwind classes for chips and the legend. The dot
+ * colours follow the same gradual ramp as the skill-tree map: grey → orange → yellow → green.
+ */
 const LEVELS: Record<MasteryLevel, { label: string; chip: string; dot: string }> = {
-  mastered: { label: "Mastered", chip: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300", dot: "bg-emerald-500" },
-  young: { label: "Almost", chip: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300", dot: "bg-sky-500" },
-  learning: { label: "Learning", chip: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300", dot: "bg-amber-500" },
-  untouched: { label: "Not started", chip: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400", dot: "bg-zinc-400" },
+  mastered: { label: "Mastered", chip: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300", dot: "bg-green-500" },
+  young: { label: "Almost", chip: "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300", dot: "bg-yellow-400" },
+  learning: { label: "Learning", chip: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300", dot: "bg-orange-500" },
+  untouched: { label: "Not started", chip: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400", dot: "bg-slate-400" },
 };
 
 const LEVEL_ORDER: MasteryLevel[] = ["mastered", "young", "learning", "untouched"];
@@ -64,9 +67,9 @@ export default async function ProgressPage() {
         </div>
         <StackedBar buckets={overall.buckets} total={overall.totalCards} />
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-zinc-500">
-          <Legend dot="bg-emerald-500" label={`${overall.buckets.mature} mature`} />
-          <Legend dot="bg-amber-500" label={`${overall.buckets.learning} learning`} />
-          <Legend dot="bg-zinc-400" label={`${overall.buckets.new} new`} />
+          <Legend dot="bg-green-500" label={`${overall.buckets.mature} mature`} />
+          <Legend dot="bg-orange-500" label={`${overall.buckets.learning} learning`} />
+          <Legend dot="bg-slate-400" label={`${overall.buckets.new} new`} />
         </div>
       </section>
 
@@ -126,9 +129,9 @@ function StackedBar({ buckets, total }: { buckets: { new: number; learning: numb
   const w = (n: number) => (total === 0 ? 0 : (n / total) * 100);
   return (
     <div className="mt-4 flex h-2.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-      <div className="h-full bg-emerald-500" style={{ width: `${w(buckets.mature)}%` }} />
-      <div className="h-full bg-amber-500" style={{ width: `${w(buckets.learning)}%` }} />
-      <div className="h-full bg-zinc-400 dark:bg-zinc-600" style={{ width: `${w(buckets.new)}%` }} />
+      <div className="h-full bg-green-500" style={{ width: `${w(buckets.mature)}%` }} />
+      <div className="h-full bg-orange-500" style={{ width: `${w(buckets.learning)}%` }} />
+      <div className="h-full bg-slate-400 dark:bg-slate-600" style={{ width: `${w(buckets.new)}%` }} />
     </div>
   );
 }
