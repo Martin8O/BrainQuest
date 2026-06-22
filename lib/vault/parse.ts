@@ -1,7 +1,7 @@
-// Pure markdown parsing for vault notes — NO file-system access, so it stays unit-testable (E2).
-// The vault uses inline #tags and a `Patří k: [[Hub]]` line, not YAML frontmatter.
+// Pure markdown parsing + harvesting for vault notes — NO file-system access, so it stays
+// unit-testable (E2). The vault uses inline #tags and a `Patří k: [[Hub]]` line, not YAML frontmatter.
 import type { VaultConfig } from "./config";
-import type { ConceptNote, LearningNote } from "./types";
+import type { Card, ConceptEdge, ConceptNote, LearningNote, RecallPrompt } from "./types";
 
 /** First H1 ("# Title"), or null. */
 export function parseTitle(md: string): string | null {
@@ -65,25 +65,69 @@ function sectionBody(md: string, heading: string): string | null {
   return out.join("\n");
 }
 
-/** Count top-level bullets ("- …" / "* …") in a section, skipping the italic template-helper bullet. */
-export function countSectionItems(md: string, heading: string): number {
+/** Top-level bullets ("- …" / "* …") under a heading, skipping the italic template-helper bullet. */
+export function sectionItems(md: string, heading: string): string[] {
   const body = sectionBody(md, heading);
-  if (body === null) return 0;
+  if (body === null) return [];
   return body
     .split(/\r?\n/)
-    .filter((l) => /^[-*]\s+\S/.test(l) && !/^[-*]\s+_/.test(l)).length;
+    .filter((l) => /^[-*]\s+\S/.test(l) && !/^[-*]\s+_/.test(l));
 }
 
-/** Count [[wikilinks]] in a section. */
-export function countSectionLinks(md: string, heading: string): number {
-  const body = sectionBody(md, heading);
-  if (body === null) return 0;
-  return (body.match(/\[\[[^\]]+\]\]/g) ?? []).length;
+/** Strip list marker, wikilink brackets, and bold markers from a bullet → plain readable text. */
+function cleanItemText(line: string): string {
+  return line
+    .replace(/^[-*]\s+/, "")
+    .replace(/\[\[([^\]]+)\]\]/g, "$1")
+    .replace(/\*\*/g, "")
+    .trim();
 }
 
-/** Assemble a learning note from its file contents. */
+/**
+ * Parse one "📘 Nové pojmy" bullet (`- **term** (gloss) — def → [[concept]]`) into a card.
+ * Returns null for non-term bullets (no leading bold), which are skipped rather than mis-harvested.
+ */
+export function parseCardBullet(line: string): Omit<Card, "id" | "sourceSlug" | "sourcePath"> | null {
+  const body = line.replace(/^[-*]\s+/, "");
+  const term = body.match(/^\*\*(.+?)\*\*/);
+  if (!term) return null;
+  const front = term[1].trim();
+  const rest = body.slice(term[0].length);
+  const linkM = rest.match(/→\s*\[\[([^\]]+)\]\]/);
+  const conceptLink = linkM ? linkM[1].trim() : null;
+  const back = rest
+    .replace(/→\s*\[\[[^\]]+\]\]\s*\.?\s*$/, "") // drop the trailing "→ [[concept]]" pointer
+    .replace(/\[\[([^\]]+)\]\]/g, "$1") // inline [[x]] -> x
+    .replace(/^\s*[—–-]\s*/, "") // drop a leading dash separator
+    .replace(/\*\*/g, "")
+    .trim();
+  return { front, back, conceptLink };
+}
+
+/** Parse one "Související" bullet (`- [[Target]] — reason`) into an edge target, or null. */
+export function parseRelatedBullet(line: string): { to: string; reason: string | null } | null {
+  const body = line.replace(/^[-*]\s+/, "");
+  const m = body.match(/\[\[([^\]]+)\]\]/);
+  if (!m) return null;
+  const to = m[1].trim();
+  const after = body.slice(body.indexOf(m[0]) + m[0].length).replace(/^\s*[—–-]\s*/, "").trim();
+  return { to, reason: after.length > 0 ? after : null };
+}
+
+/** Assemble a learning note (incl. its harvested cards + recall prompts) from its file contents. */
 export function parseLearningNote(slug: string, path: string, md: string, cfg: VaultConfig): LearningNote {
   const tags = parseTags(md);
+  const cards: Card[] = [];
+  for (const line of sectionItems(md, cfg.harvest.cardsHeading)) {
+    const parsed = parseCardBullet(line);
+    if (parsed) cards.push({ id: `${slug}#c${cards.length}`, sourceSlug: slug, sourcePath: path, ...parsed });
+  }
+  const recall: RecallPrompt[] = sectionItems(md, cfg.harvest.recallHeading).map((line, i) => ({
+    id: `${slug}#r${i}`,
+    question: cleanItemText(line),
+    sourceSlug: slug,
+    sourcePath: path,
+  }));
   return {
     kind: "learning",
     slug,
@@ -93,20 +137,26 @@ export function parseLearningNote(slug: string, path: string, md: string, cfg: V
     date: parseDateFromSlug(slug),
     hub: parseHub(md),
     projects: tags.filter((t) => t.startsWith("project/")),
-    cardCount: countSectionItems(md, cfg.harvest.cardsHeading),
-    recallCount: countSectionItems(md, cfg.harvest.recallHeading),
+    cards,
+    recall,
   };
 }
 
-/** Assemble a concept note from its file contents. */
+/** Assemble a concept note (incl. its outgoing graph edges) from its file contents. */
 export function parseConceptNote(slug: string, path: string, md: string, cfg: VaultConfig): ConceptNote {
+  const title = parseTitle(md) ?? slug;
+  const edges: ConceptEdge[] = [];
+  for (const line of sectionItems(md, cfg.harvest.relatedHeading)) {
+    const parsed = parseRelatedBullet(line);
+    if (parsed) edges.push({ from: title, to: parsed.to, reason: parsed.reason });
+  }
   return {
     kind: "concept",
     slug,
     path,
-    title: parseTitle(md) ?? slug,
+    title,
     tags: parseTags(md),
     gloss: parseGloss(md),
-    relatedCount: countSectionLinks(md, cfg.harvest.relatedHeading),
+    edges,
   };
 }

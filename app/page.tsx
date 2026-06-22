@@ -1,21 +1,22 @@
 import { readVault } from "@/lib/vault/reader";
-import type { ConceptNote, LearningNote } from "@/lib/vault/types";
+import type { Card, ConceptNote, LearningNote } from "@/lib/vault/types";
 
 // Read the vault fresh on every request — it grows as Martin learns, so never prerender.
 export const dynamic = "force-dynamic";
 
+const CARD_PREVIEW_COUNT = 12;
+
 export default async function Home() {
   const vault = await readVault();
-  const totalCards = vault.learning.reduce((n, x) => n + x.cardCount, 0);
-  const totalRecall = vault.learning.reduce((n, x) => n + x.recallCount, 0);
+  const { cards, recall, graph } = vault.harvest;
 
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">🧠 BrainQuest</h1>
         <p className="mt-2 max-w-2xl text-zinc-600 dark:text-zinc-400">
-          Read-only overview of the <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">vault</code> vault —
-          the raw material BrainQuest will turn into a spaced-repetition learning game.
+          Read-only overview of the <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">vault</code> vault,
+          harvested into cards, recall prompts, and a concept graph — the raw material for the spaced-repetition game.
         </p>
         <p className="mt-2 font-mono text-xs text-zinc-500">📂 {vault.vaultPath}</p>
       </header>
@@ -26,11 +27,24 @@ export default async function Home() {
         </div>
       )}
 
-      <section className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <section className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label="Learning notes" value={vault.learning.length} />
         <Stat label="Concepts" value={vault.concepts.length} />
-        <Stat label="📘 Card candidates" value={totalCards} />
-        <Stat label="❓ Recall prompts" value={totalRecall} />
+        <Stat label="📘 Cards" value={cards.length} />
+        <Stat label="❓ Recall prompts" value={recall.length} />
+        <Stat label="🔗 Graph edges" value={graph.edges.length} />
+      </section>
+
+      <section className="mb-12">
+        <h2 className="mb-1 text-xl font-semibold">Harvested cards</h2>
+        <p className="mb-4 text-sm text-zinc-500">
+          First {Math.min(CARD_PREVIEW_COUNT, cards.length)} of {cards.length}, parsed from the “📘 Nové pojmy” bullets.
+        </p>
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {cards.slice(0, CARD_PREVIEW_COUNT).map((c) => (
+            <CardPreview key={c.id} card={c} />
+          ))}
+        </ul>
       </section>
 
       <section className="mb-12">
@@ -45,9 +59,12 @@ export default async function Home() {
       </section>
 
       <section>
-        <h2 className="mb-4 text-xl font-semibold">
+        <h2 className="mb-1 text-xl font-semibold">
           Concepts <span className="font-normal text-zinc-400">({vault.concepts.length})</span>
         </h2>
+        <p className="mb-4 text-sm text-zinc-500">
+          {graph.nodes.length} nodes · {graph.edges.length} edges in the concept graph (from “Související”).
+        </p>
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {vault.concepts.map((c) => (
             <ConceptCard key={c.slug} note={c} />
@@ -67,6 +84,20 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
+function CardPreview({ card }: { card: Card }) {
+  return (
+    <li className="flex flex-col rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="font-medium">{card.front}</div>
+      <p className="mt-1 line-clamp-3 text-sm text-zinc-600 dark:text-zinc-400">{card.back}</p>
+      {card.conceptLink && (
+        <span className="mt-2 self-start rounded bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+          🔗 {card.conceptLink}
+        </span>
+      )}
+    </li>
+  );
+}
+
 function LearningRow({ note }: { note: LearningNote }) {
   return (
     <li className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between">
@@ -82,8 +113,8 @@ function LearningRow({ note }: { note: LearningNote }) {
         </div>
       </div>
       <div className="flex shrink-0 gap-3 text-xs text-zinc-600 dark:text-zinc-400">
-        <span title="card candidates (📘 Nové pojmy)">📘 {note.cardCount}</span>
-        <span title="recall prompts (❓ K probrání příště)">❓ {note.recallCount}</span>
+        <span title="cards harvested (📘 Nové pojmy)">📘 {note.cards.length}</span>
+        <span title="recall prompts (❓ K probrání příště)">❓ {note.recall.length}</span>
       </div>
     </li>
   );
@@ -94,8 +125,8 @@ function ConceptCard({ note }: { note: ConceptNote }) {
     <li className="flex flex-col rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex items-baseline justify-between gap-2">
         <span className="truncate font-medium">{note.title}</span>
-        <span className="shrink-0 text-xs text-zinc-500" title="related concepts (Související)">
-          🔗 {note.relatedCount}
+        <span className="shrink-0 text-xs text-zinc-500" title="related concepts (Související edges)">
+          🔗 {note.edges.length}
         </span>
       </div>
       {note.gloss && <p className="mt-1 line-clamp-2 text-xs text-zinc-500">{note.gloss}</p>}

@@ -56,8 +56,8 @@ Martin's explicit standing instruction OVERRIDES the default: store **NOTHING** 
 `D:\Projekty\BrainQuest\local\` only. Index: `local/memory/MEMORY.md`.
 
 ## 10. Hard rules
-- `local/` and `data/` NEVER go to git. No secrets/keys/`.env`/`node_modules` committed. Scope every commit
-  (`git status` first; no blind `git add -A`).
+- `local/` NEVER goes to git. `data/` **IS** committed (synced app state — see §3; never secrets). No
+  secrets/keys/`.env`/`node_modules` committed. Scope every commit (`git status` first; no blind `git add -A`).
 - Teaching-layer writes to `vault` are free (§11); avoid wholesale refactors of unrelated notes without a heads-up.
 - **"X is done" pre-authorizes commit + push** (Martin's confirmed workflow, 2026-06-22). Still scope every commit.
 

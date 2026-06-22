@@ -4,7 +4,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { loadVaultConfig } from "./config";
 import { parseConceptNote, parseLearningNote } from "./parse";
-import type { VaultSnapshot } from "./types";
+import type { Harvest, VaultSnapshot } from "./types";
+
+/** Empty harvest used when the vault can't be read. */
+const EMPTY_HARVEST: Harvest = { cards: [], recall: [], graph: { nodes: [], edges: [] } };
 
 interface RawFile {
   slug: string;
@@ -42,7 +45,13 @@ export async function readVault(): Promise<VaultSnapshot> {
     const concepts = conceptFiles
       .map((f) => parseConceptNote(f.slug, f.path, f.md, cfg))
       .sort((a, b) => a.title.localeCompare(b.title));
-    return { vaultPath, ok: true, error: null, learning, concepts };
+    // Aggregate the normalized harvest (cards/recall/graph) from the per-note results — derived, not re-parsed.
+    const harvest: Harvest = {
+      cards: learning.flatMap((n) => n.cards),
+      recall: learning.flatMap((n) => n.recall),
+      graph: { nodes: concepts.map((c) => c.title), edges: concepts.flatMap((c) => c.edges) },
+    };
+    return { vaultPath, ok: true, error: null, learning, concepts, harvest };
   } catch (err) {
     return {
       vaultPath,
@@ -50,6 +59,7 @@ export async function readVault(): Promise<VaultSnapshot> {
       error: err instanceof Error ? err.message : String(err),
       learning: [],
       concepts: [],
+      harvest: EMPTY_HARVEST,
     };
   }
 }
