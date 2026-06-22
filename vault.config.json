@@ -1,0 +1,13 @@
+{
+  "_comment": "BrainQuest vault config (A2 stub). Single source of truth for WHERE the vault is and WHICH structure to read. Read-only — the app never writes here. Override the path per-machine with the BRAINQUEST_VAULT_PATH env var (the repo is synced via GitHub, so this absolute path is machine-specific). Generalized further in E1.",
+  "vaultPath": "D:/path/to/your/vault",
+  "folders": {
+    "learning": "learning",
+    "concepts": "concepts"
+  },
+  "harvest": {
+    "cardsHeading": "📘 Nové pojmy",
+    "recallHeading": "❓ K probrání příště",
+    "relatedHeading": "Související"
+  }
+}
