@@ -47,7 +47,7 @@ export default async function Home() {
 
       <Hud g={gamification} className="mb-8" />
 
-      <div className="mb-10 grid gap-3 sm:grid-cols-3">
+      <div className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           href="/session"
           className="flex items-center justify-between gap-4 rounded-2xl border border-indigo-300 bg-indigo-50 p-5 transition hover:border-indigo-400 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/50 dark:hover:bg-indigo-950"
@@ -92,6 +92,21 @@ export default async function Home() {
           </div>
           <span className="shrink-0 rounded-full bg-violet-600 px-3 py-1.5 text-sm font-medium text-white">
             {vault.concepts.length} →
+          </span>
+        </Link>
+
+        <Link
+          href="/tutor"
+          className="flex items-center justify-between gap-4 rounded-2xl border border-fuchsia-300 bg-fuchsia-50 p-5 transition hover:border-fuchsia-400 hover:bg-fuchsia-100 dark:border-fuchsia-900 dark:bg-fuchsia-950/50 dark:hover:bg-fuchsia-950"
+        >
+          <div>
+            <div className="text-lg font-semibold">🎓 AI tutor</div>
+            <div className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+              Answer in your words — a local AI grades it.
+            </div>
+          </div>
+          <span className="shrink-0 rounded-full bg-fuchsia-600 px-3 py-1.5 text-sm font-medium text-white">
+            {recall.length} →
           </span>
         </Link>
       </div>
