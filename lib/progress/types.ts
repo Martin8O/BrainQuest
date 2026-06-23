@@ -39,6 +39,8 @@ export interface ClusterProgress {
   title: string;
   date: string | null;
   cardCount: number;
+  /** Cards in this cluster reviewed at least once (have a stored lastReviewedAt) — the "X of Y done". */
+  reviewedCards: number;
   avgStrength: number;
   buckets: BucketCounts;
 }

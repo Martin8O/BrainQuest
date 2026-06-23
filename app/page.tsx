@@ -3,7 +3,8 @@ import { readVault } from "@/lib/vault/reader";
 import type { Card, ConceptNote, LearningNote } from "@/lib/vault/types";
 import { loadReviewStore } from "@/lib/srs/store";
 import { ensureStates, selectDue } from "@/lib/srs/scheduler";
-import { computeProgress } from "@/lib/progress/mastery";
+import { computeProgress, gamificationFor } from "@/lib/progress/mastery";
+import { Hud } from "./components/Hud";
 
 // Read the vault fresh on every request — it grows as Martin learns, so never prerender.
 export const dynamic = "force-dynamic";
@@ -27,7 +28,11 @@ export default async function Home() {
   ).length;
 
   // Overall mastery — the "how much do I know" headline, links to the full progress view.
-  const masteryPct = Math.round(computeProgress(vault.harvest, vault.learning, store).overall.avgStrength * 100);
+  const progress = computeProgress(vault.harvest, vault.learning, store);
+  const masteryPct = Math.round(progress.overall.avgStrength * 100);
+
+  // The motivation HUD: level, XP, streak — derived from the lifetime activity log + mastery (C3).
+  const gamification = gamificationFor(progress, store, now);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
@@ -39,6 +44,8 @@ export default async function Home() {
         </p>
         <p className="mt-2 font-mono text-xs text-zinc-500">📂 {vault.vaultPath}</p>
       </header>
+
+      <Hud g={gamification} className="mb-8" />
 
       <div className="mb-10 grid gap-3 sm:grid-cols-3">
         <Link

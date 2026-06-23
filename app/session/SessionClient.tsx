@@ -8,8 +8,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { schedule } from "@/lib/srs/scheduler";
+import { XP_PER_REVIEW } from "@/lib/gamification/engine";
 import type { Grade } from "@/lib/srs/types";
-import { gradeCard } from "./actions";
+import type { GamificationState } from "@/lib/gamification/types";
+import { Hud } from "../components/Hud";
+import { gradeCard, getGamification } from "./actions";
 import type { SessionCard } from "./types";
 
 /** The four grade buttons, left→hardest to right→easiest, with their keyboard shortcut. */
@@ -25,15 +28,36 @@ function intervalLabel(days: number): string {
   return days <= 0 ? "<1d" : days < 30 ? `${days}d` : `${Math.round(days / 30)}mo`;
 }
 
-export default function SessionClient({ initialQueue }: { initialQueue: SessionCard[] }) {
+export default function SessionClient({
+  initialQueue,
+  levelBefore,
+  xpBefore,
+}: {
+  initialQueue: SessionCard[];
+  levelBefore: number;
+  xpBefore: number;
+}) {
   const [queue, setQueue] = useState<SessionCard[]>(initialQueue);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [reviewed, setReviewed] = useState(0);
   const [pending, setPending] = useState(false);
+  // Fresh gamification state, fetched once the session ends → drives the "unlock moment" celebration.
+  const [gamification, setGamification] = useState<GamificationState | null>(null);
 
   const finished = index >= queue.length;
   const card = finished ? null : queue[index];
+
+  // When the queue empties, pull the post-session XP/level/streak so the summary shows real numbers.
+  // Swallow a failed fetch (e.g. a transient vault read error) — the generic complete screen still
+  // renders with the fallback XP estimate rather than crashing on an unhandled rejection.
+  useEffect(() => {
+    if (finished && reviewed > 0 && gamification === null) {
+      void getGamification()
+        .then(setGamification)
+        .catch(() => {});
+    }
+  }, [finished, reviewed, gamification]);
 
   const handleGrade = useCallback(
     async (grade: Grade) => {
@@ -76,22 +100,50 @@ export default function SessionClient({ initialQueue }: { initialQueue: SessionC
   }, [flipped, finished, handleGrade]);
 
   if (finished) {
+    // True XP gained = post-session total minus where you started (mastery bonus included). Until the
+    // fresh state lands, fall back to the per-review estimate so the line still shows something.
+    const xpEarned = gamification != null ? Math.max(0, gamification.xp - xpBefore) : reviewed * XP_PER_REVIEW;
+    const leveledUp = gamification != null && gamification.level.level > levelBefore;
     return (
-      <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-8 text-center dark:border-emerald-900 dark:bg-emerald-950">
-        <div className="text-4xl">🎉</div>
-        <h2 className="mt-3 text-2xl font-bold">Session complete</h2>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-          Reviewed {reviewed} {reviewed === 1 ? "card" : "cards"}. Cards you passed are scheduled for later.
-        </p>
-        <Link
-          href="/session"
-          className="mt-5 inline-block rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
-          Check for more due
-        </Link>
-        <Link href="/" className="mt-5 ml-3 inline-block text-sm text-zinc-500 underline hover:text-zinc-700">
-          Back to overview
-        </Link>
+      <div>
+        <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-8 text-center dark:border-emerald-900 dark:bg-emerald-950">
+          {leveledUp ? (
+            <div className="unlock-pop">
+              <div className="halo mx-auto grid h-16 w-16 place-items-center rounded-2xl text-2xl level-gem text-white">
+                {gamification!.level.level}
+              </div>
+              <h2 className="mt-4 text-2xl font-bold">⚡ Level up — {gamification!.level.title}!</h2>
+              <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+                You reached level {gamification!.level.level}. New rank unlocked.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="text-4xl">🎉</div>
+              <h2 className="mt-3 text-2xl font-bold">Session complete</h2>
+            </>
+          )}
+          <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+            Reviewed {reviewed} {reviewed === 1 ? "card" : "cards"} · <span className="font-semibold text-emerald-700 dark:text-emerald-300">+{xpEarned} XP</span>
+            {gamification?.streak.todayActive && gamification.streak.current > 0 && (
+              <> · 🔥 {gamification.streak.current} day streak</>
+            )}
+          </p>
+        </div>
+
+        {gamification && <Hud g={gamification} className="mt-4" />}
+
+        <div className="mt-5 text-center">
+          <Link
+            href="/session"
+            className="inline-block rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            Check for more due
+          </Link>
+          <Link href="/" className="ml-3 inline-block text-sm text-zinc-500 underline hover:text-zinc-700">
+            Back to overview
+          </Link>
+        </div>
       </div>
     );
   }

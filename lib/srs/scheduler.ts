@@ -2,15 +2,29 @@
 // deterministic and unit-testable (E2). The clock ("now") is always passed in by the caller:
 // the explicit-clock/seed rule for any time-dependent path — same inputs always give the same output.
 //
-// SM-2 (SuperMemo 2) in one breath: each card carries an interval and an "ease factor". A good
-// recall multiplies the interval (it grows: 1 day → 6 → ~15 → …); a failure restarts it. Ease drifts
-// up for easy cards, down for hard ones. Simple, well-understood; FSRS can replace it later.
+// SM-2 (SuperMemo 2) in one breath: each card carries an interval and an "ease factor". A pass
+// multiplies the interval (it grows); a failure restarts it. Ease drifts up for easy cards, down for
+// hard ones. Simple, well-understood; FSRS can replace it later.
+//
+// One deliberate change from textbook SM-2: the four grade buttons must MEAN something on every
+// review, including a brand-new card. Plain SM-2 gives every passing grade interval=1 on the first
+// review (grade only nudged ease, which doesn't bite until rep 3), so Hard/Good/Easy all read "1d"
+// and the buttons feel pointless. Instead, grades drive the interval directly: a new card graduates
+// on a per-grade ramp (Hard 1d · Good 3d · Easy 7d), and an established card grows by a grade-specific
+// factor of its current interval (Hard slow, Good × ease, Easy × ease with a bonus).
 import type { Grade, ReviewState, ReviewStore } from "./types";
 
 /** SM-2 starting ease factor and its hard floor. */
 const INITIAL_EASE = 2.5;
 const MIN_EASE = 1.3;
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** First-pass ("graduating") interval in days, per grade — what a brand-new card jumps to. */
+const GRADUATING_DAYS: Record<Exclude<Grade, "again">, number> = { hard: 1, good: 3, easy: 7 };
+/** Hard grows the interval slowly (instead of by ease); never less than +1 day so it still advances. */
+const HARD_MULT = 1.2;
+/** Easy gets a bonus on top of ease, so "I really know this" pushes the interval out faster. */
+const EASY_BONUS = 1.3;
 
 /**
  * Map the 4-button grade onto SM-2's 0–5 quality scale.
@@ -66,11 +80,21 @@ export function schedule(state: ReviewState, grade: Grade, now: Date): ReviewSta
     };
   }
 
-  // A pass: classic SM-2 interval schedule (1 day, then 6, then previous interval × ease).
+  // A pass: grade-aware interval. A new card (reps 0) graduates on the fixed per-grade ramp; an
+  // established card grows by a grade-specific factor of its current interval. (See the file header.)
+  const pass = grade as Exclude<Grade, "again">;
   let intervalDays: number;
-  if (state.reps === 0) intervalDays = 1;
-  else if (state.reps === 1) intervalDays = 6;
-  else intervalDays = Math.round(state.intervalDays * ease);
+  if (state.reps === 0) {
+    intervalDays = GRADUATING_DAYS[pass];
+  } else {
+    const grown =
+      pass === "hard"
+        ? Math.max(state.intervalDays + 1, Math.round(state.intervalDays * HARD_MULT))
+        : pass === "good"
+          ? Math.round(state.intervalDays * ease)
+          : Math.round(state.intervalDays * ease * EASY_BONUS);
+    intervalDays = Math.max(1, grown);
+  }
 
   return {
     ...state,

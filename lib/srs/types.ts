@@ -30,4 +30,11 @@ export interface ReviewStore {
   version: number;
   /** Review state keyed by Card.id. */
   reviews: Record<string, ReviewState>;
+  /**
+   * Lifetime activity log: local calendar day (YYYY-MM-DD) → reviews graded that day. Added in v2 to
+   * feed the streak + XP (gamification): a streak needs to know *which days* you studied, and per-card
+   * state can't tell us — `lastReviewedAt` is overwritten each review, losing the history. This is the
+   * one thing the motivation layer genuinely must store rather than derive.
+   */
+  daily: Record<string, number>;
 }

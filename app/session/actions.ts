@@ -3,8 +3,11 @@
 // the server — that's where node:fs (and recordReview) is allowed to live.
 "use server";
 
-import { recordReview } from "@/lib/srs/store";
+import { recordReview, loadReviewStore } from "@/lib/srs/store";
+import { readVault } from "@/lib/vault/reader";
+import { computeProgress, gamificationFor } from "@/lib/progress/mastery";
 import type { Grade, ReviewState } from "@/lib/srs/types";
+import type { GamificationState } from "@/lib/gamification/types";
 
 /**
  * Record one review and return the updated SRS state.
@@ -13,4 +16,17 @@ import type { Grade, ReviewState } from "@/lib/srs/types";
  */
 export async function gradeCard(cardId: string, grade: Grade): Promise<ReviewState> {
   return recordReview(cardId, grade);
+}
+
+/**
+ * Recompute the live gamification state (XP, level, streak) from the freshly-persisted store + mastery.
+ * The session calls this when the queue is finished — by then every grade is saved, so the celebration
+ * shows accurate, post-session numbers and can detect a level-up versus where the learner started.
+ */
+export async function getGamification(): Promise<GamificationState> {
+  const now = new Date();
+  const vault = await readVault();
+  const store = await loadReviewStore();
+  const progress = computeProgress(vault.harvest, vault.learning, store);
+  return gamificationFor(progress, store, now);
 }

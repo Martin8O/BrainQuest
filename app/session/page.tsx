@@ -5,6 +5,7 @@ import Link from "next/link";
 import { readVault } from "@/lib/vault/reader";
 import { loadReviewStore } from "@/lib/srs/store";
 import { ensureStates, selectDue } from "@/lib/srs/scheduler";
+import { computeProgress, gamificationFor } from "@/lib/progress/mastery";
 import SessionClient from "./SessionClient";
 import type { SessionCard } from "./types";
 
@@ -31,6 +32,13 @@ export default async function SessionPage() {
         : null;
     })
     .filter((x): x is SessionCard => x !== null);
+
+  // The XP/level the learner walks in on — the session compares against these to fire a "level up!"
+  // moment and to show the true XP gained (gamification.xp − xpBefore), mastery bonus included.
+  const progress = computeProgress(vault.harvest, vault.learning, store);
+  const before = gamificationFor(progress, store, now);
+  const levelBefore = before.level.level;
+  const xpBefore = before.xp;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-5 py-10 sm:px-8 sm:py-14">
@@ -60,7 +68,7 @@ export default async function SessionPage() {
           </p>
         </div>
       ) : (
-        <SessionClient initialQueue={queue} />
+        <SessionClient initialQueue={queue} levelBefore={levelBefore} xpBefore={xpBefore} />
       )}
     </main>
   );

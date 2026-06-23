@@ -3,15 +3,16 @@
 // READ/WRITE FENCE: this touches only the repo's data/ dir — never the read-only vault vault.
 import fs from "node:fs/promises";
 import path from "node:path";
+import { localDateKey } from "@/lib/gamification/engine";
 import { newReviewState, schedule } from "./scheduler";
 import type { Grade, ReviewState, ReviewStore } from "./types";
 
-/** Current data/reviews.json schema version. */
-export const REVIEW_STORE_VERSION = 1;
+/** Current data/reviews.json schema version (v2 added the `daily` activity log for streaks/XP). */
+export const REVIEW_STORE_VERSION = 2;
 
 /** An empty, valid store — used when the file does not exist yet. */
 export function emptyStore(): ReviewStore {
-  return { version: REVIEW_STORE_VERSION, reviews: {} };
+  return { version: REVIEW_STORE_VERSION, reviews: {}, daily: {} };
 }
 
 /** The data/ directory — overridable via BRAINQUEST_DATA_DIR so other machines/tests can redirect it. */
@@ -29,8 +30,10 @@ export async function loadReviewStore(): Promise<ReviewStore> {
   try {
     const raw = await fs.readFile(reviewsPath(), "utf8");
     const parsed = JSON.parse(raw) as Partial<ReviewStore>;
-    // Be lenient about a missing field; normalize to the current shape.
-    return { version: parsed.version ?? REVIEW_STORE_VERSION, reviews: parsed.reviews ?? {} };
+    // Normalize to the current shape (a forward migration): a v1 file has no `daily` → default it to
+    // empty, and stamp the current version so the next save writes the up-to-date format. The streak/XP
+    // simply start from the first review logged after the upgrade.
+    return { version: REVIEW_STORE_VERSION, reviews: parsed.reviews ?? {}, daily: parsed.daily ?? {} };
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") return emptyStore();
     throw err;
@@ -60,6 +63,9 @@ export async function recordReview(
   const prev = store.reviews[cardId] ?? newReviewState(cardId, now);
   const next = schedule(prev, grade, now);
   store.reviews[cardId] = next;
+  // Tally today's activity (local day) — the streak/XP read this lifetime log, not per-card state.
+  const day = localDateKey(now);
+  store.daily[day] = (store.daily[day] ?? 0) + 1;
   await saveReviewStore(store);
   return next;
 }

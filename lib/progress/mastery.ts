@@ -4,6 +4,8 @@
 // know, per concept and overall". Deterministic → trivially testable (E2), same as the B2 scheduler.
 import type { Card, Harvest, LearningNote } from "@/lib/vault/types";
 import type { ReviewState, ReviewStore } from "@/lib/srs/types";
+import { computeGamification } from "@/lib/gamification/engine";
+import type { GamificationState } from "@/lib/gamification/types";
 import type {
   BucketCounts,
   CardBucket,
@@ -65,6 +67,11 @@ function avgStrength(cards: Card[], store: ReviewStore): number {
   return mean(cards.map((c) => cardStrength(store.reviews[c.id])));
 }
 
+/** How many of these cards have been reviewed at least once (same rule as OverallProgress). */
+function reviewedCount(cards: Card[], store: ReviewStore): number {
+  return cards.filter((c) => store.reviews[c.id]?.lastReviewedAt != null).length;
+}
+
 /**
  * Turn the harvest + review store into the full progress summary. Pure: same inputs → same output.
  * - overall: across every card.
@@ -81,7 +88,7 @@ export function computeProgress(
 
   const overall: OverallProgress = {
     totalCards: cards.length,
-    reviewedCards: cards.filter((c) => store.reviews[c.id]?.lastReviewedAt != null).length,
+    reviewedCards: reviewedCount(cards, store),
     avgStrength: avgStrength(cards, store),
     buckets: bucketCounts(cards, store),
   };
@@ -121,6 +128,7 @@ export function computeProgress(
         title: note?.title ?? slug,
         date: note?.date ?? null,
         cardCount: group.length,
+        reviewedCards: reviewedCount(group, store),
         avgStrength: avgStrength(group, store),
         buckets: bucketCounts(group, store),
       };
@@ -128,4 +136,14 @@ export function computeProgress(
     .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.slug.localeCompare(b.slug));
 
   return { overall, concepts, clusters };
+}
+
+/**
+ * Bridge from an already-computed ProgressSummary to the gamification state (C3): mastered concepts are
+ * the XP heavyweight, so this is where "progress" feeds "motivation". Kept in ONE place (callers pass
+ * the progress they already have — no extra vault read) so the mastery→XP rule can't drift across pages.
+ */
+export function gamificationFor(progress: ProgressSummary, store: ReviewStore, now: Date): GamificationState {
+  const masteredConcepts = progress.concepts.filter((c) => c.level === "mastered").length;
+  return computeGamification(store, masteredConcepts, now);
 }

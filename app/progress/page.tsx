@@ -65,7 +65,7 @@ export default async function ProgressPage() {
             {overall.reviewedCards} / {overall.totalCards} cards reviewed
           </div>
         </div>
-        <StackedBar buckets={overall.buckets} total={overall.totalCards} />
+        <StrengthBar buckets={overall.buckets} total={overall.totalCards} avgStrength={overall.avgStrength} />
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-zinc-500">
           <Legend dot="bg-green-500" label={`${overall.buckets.mature} mature`} />
           <Legend dot="bg-orange-500" label={`${overall.buckets.learning} learning`} />
@@ -102,9 +102,12 @@ export default async function ProgressPage() {
 
       {/* Clusters: per source note */}
       <section>
-        <h2 className="mb-4 text-xl font-semibold">
+        <h2 className="mb-1 text-xl font-semibold">
           By topic <span className="font-normal text-zinc-400">({clusters.length} notes)</span>
         </h2>
+        <p className="mb-4 text-xs text-zinc-500">
+          <span className="font-medium">%</span> = how well you know it · <span className="font-medium">X/Y</span> = cards seen
+        </p>
         <ul className="space-y-2.5">
           {clusters.map((cl) => (
             <ClusterRow key={cl.slug} cluster={cl} />
@@ -124,14 +127,28 @@ function Legend({ dot, label }: { dot: string; label: string }) {
   );
 }
 
-/** A stacked bar: mature (green) → learning (amber) → new (zinc), widths proportional to counts. */
-function StackedBar({ buckets, total }: { buckets: { new: number; learning: number; mature: number }; total: number }) {
-  const w = (n: number) => (total === 0 ? 0 : (n / total) * 100);
+/**
+ * A strength bar whose FILLED length equals the shown % (avgStrength) — so the bar and the number
+ * always agree. The fill is split by maturity: green = the share contributed by mature cards
+ * (mature/total, each worth full strength), orange = the rest of the strength (from learning cards);
+ * the grey remainder is how far the topic still is from full mastery. A pile of just-started cards
+ * therefore reads as a short orange sliver (low strength), not a full orange bar (high count).
+ */
+function StrengthBar({
+  buckets,
+  total,
+  avgStrength,
+}: {
+  buckets: { new: number; learning: number; mature: number };
+  total: number;
+  avgStrength: number;
+}) {
+  const greenFrac = total === 0 ? 0 : buckets.mature / total;
+  const orangeFrac = Math.max(0, avgStrength - greenFrac); // learning cards' strength share
   return (
     <div className="mt-4 flex h-2.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-      <div className="h-full bg-green-500" style={{ width: `${w(buckets.mature)}%` }} />
-      <div className="h-full bg-orange-500" style={{ width: `${w(buckets.learning)}%` }} />
-      <div className="h-full bg-slate-400 dark:bg-slate-600" style={{ width: `${w(buckets.new)}%` }} />
+      <div className="h-full bg-green-500" style={{ width: `${greenFrac * 100}%` }} />
+      <div className="h-full bg-orange-500" style={{ width: `${orangeFrac * 100}%` }} />
     </div>
   );
 }
@@ -154,10 +171,10 @@ function ClusterRow({ cluster }: { cluster: ClusterProgress }) {
       <div className="flex items-baseline justify-between gap-3">
         <span className="min-w-0 truncate text-sm font-medium">{cluster.title}</span>
         <span className="shrink-0 text-xs tabular-nums text-zinc-500">
-          {pct(cluster.avgStrength)}% · {cluster.cardCount} cards
+          {pct(cluster.avgStrength)}% · {cluster.reviewedCards}/{cluster.cardCount} cards
         </span>
       </div>
-      <StackedBar buckets={cluster.buckets} total={cluster.cardCount} />
+      <StrengthBar buckets={cluster.buckets} total={cluster.cardCount} avgStrength={cluster.avgStrength} />
     </li>
   );
 }
