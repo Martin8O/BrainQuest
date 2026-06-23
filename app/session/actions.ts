@@ -11,7 +11,7 @@ import type { GamificationState } from "@/lib/gamification/types";
 
 /**
  * Record one review and return the updated SRS state.
- * Persists via the B2 store (load → pure SM-2 schedule → atomic save). Uses the real clock here —
+ * Persists via the B2 store (load → pure FSRS schedule → atomic save). Uses the real clock here —
  * the daily session is live use; the scheduler itself stays deterministic (now is injected for it).
  */
 export async function gradeCard(cardId: string, grade: Grade): Promise<ReviewState> {

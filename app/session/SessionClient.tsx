@@ -3,7 +3,7 @@
 // The flip-card review loop — the only client component in B3. It owns the session's UI state
 // (which card, flipped?, how many done) and walks a queue of due cards. Grading calls the gradeCard
 // server action, which persists the new schedule; "again" re-queues the card so you re-see it before
-// the session ends (lightweight relearning). The pure SM-2 schedule() runs here too — read-only — to
+// the session ends (lightweight relearning). The pure FSRS schedule() runs here too — read-only — to
 // preview what each button does to the interval, so the buttons teach as you press them.
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";

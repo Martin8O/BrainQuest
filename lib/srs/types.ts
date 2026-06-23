@@ -4,18 +4,26 @@
 /** How well a card was recalled. The 4-button scale the daily session (B3) will show. */
 export type Grade = "again" | "hard" | "good" | "easy";
 
-/** Per-card scheduling state, evolved by the SM-2 step on each review. */
+/** Per-card scheduling state, evolved by the FSRS step on each review (F1; was SM-2 through E2). */
 export interface ReviewState {
   /** The Card.id this state schedules (e.g. "2026-06-22-b1-...#c0"). */
   cardId: string;
-  /** Successful repetitions in a row (SM-2 "n"); reset to 0 on a lapse. */
+  /**
+   * Successful repetitions in a row; reset to 0 on a lapse. Kept as a derived counter for the mastery
+   * "new" gate and the UI — FSRS itself does not use it (its memory lives in stability + difficulty).
+   */
   reps: number;
-  /** How many times the card has been failed ("again") — diagnostics, not used by the SM-2 math. */
+  /** How many times the card has been failed ("again") — diagnostics, not used by the FSRS math. */
   lapses: number;
-  /** Current inter-repetition interval in whole days (SM-2 "I"). */
+  /** Current interval in whole days: the FSRS-scheduled gap from the last review to the next. */
   intervalDays: number;
-  /** Ease factor (SM-2 "EF"); starts at 2.5, never drops below 1.3. */
-  ease: number;
+  /**
+   * FSRS stability: the number of days until recall probability decays to ~90%. 0 until the first
+   * review; grows with each successful recall. The card's "how durable is this memory" number.
+   */
+  stability: number;
+  /** FSRS difficulty (1..10): how intrinsically hard the card is. 0 until the first review. */
+  difficulty: number;
   /** When the card next becomes due, as an ISO-8601 timestamp. */
   due: string;
   /** When it was last reviewed (ISO-8601), or null if never. */

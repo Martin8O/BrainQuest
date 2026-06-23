@@ -17,10 +17,11 @@ import type {
 } from "./types";
 
 /**
- * Days of SM-2 interval at which a card counts as fully "known" (strength 1). 21 days is the common
+ * Days of scheduled interval at which a card counts as fully "known" (strength 1). 21 days is the common
  * "mature" threshold (a card you still recall after three weeks is well retained). Below it, strength
- * scales linearly with the interval, so a card grows toward mastery as its successful reviews stretch
- * the interval out (1 → 6 → 15 → 21+ days).
+ * scales linearly with the interval, so a card grows toward mastery as its successful reviews stretch the
+ * interval out. The interval is the FSRS schedule (≈ stability at 90% retention) since F1; reading the
+ * interval keeps strength engine-agnostic. A future refinement could read FSRS `stability` directly.
  */
 const MATURE_DAYS = 21;
 
@@ -28,7 +29,7 @@ const MATURE_DAYS = 21;
 const YOUNG_AT = 0.5;
 const MASTERED_AT = 1;
 
-/** A single card's strength in 0..1, from its review state. Unseen / lapsed (reps 0) = 0. */
+/** A single card's strength in 0..1, from its scheduled interval. Unseen / lapsed (reps 0) = 0. */
 export function cardStrength(state: ReviewState | undefined): number {
   if (!state || state.reps === 0) return 0;
   return Math.min(1, state.intervalDays / MATURE_DAYS);

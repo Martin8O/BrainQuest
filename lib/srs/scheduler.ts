@@ -1,46 +1,38 @@
-// Pure SM-2 spaced-repetition scheduler — NO file system, NO Date.now() inside, so it stays
-// deterministic and unit-testable (E2). The clock ("now") is always passed in by the caller:
-// the explicit-clock/seed rule for any time-dependent path — same inputs always give the same output.
+// Pure spaced-repetition scheduler — NO file system, NO Date.now() inside, so it stays deterministic
+// and unit-testable (E2). The clock ("now") is always passed in by the caller: the explicit-clock rule
+// for any time-dependent path — same inputs always give the same output.
 //
-// SM-2 (SuperMemo 2) in one breath: each card carries an interval and an "ease factor". A pass
-// multiplies the interval (it grows); a failure restarts it. Ease drifts up for easy cards, down for
-// hard ones. Simple, well-understood; FSRS can replace it later.
+// As of F1 the engine is FSRS-4.5 (a probabilistic memory model: stability + difficulty + retrievability)
+// instead of SM-2. The math lives in ./fsrs.ts; this file is the thin state machine that turns "previous
+// state + grade + now" into "next state" and answers the daily-queue questions. The public API is
+// unchanged from the SM-2 version (newReviewState / schedule / isDue / ensureStates / selectDue), so the
+// store, the session UI, and the mastery model did not have to change.
 //
-// One deliberate change from textbook SM-2: the four grade buttons must MEAN something on every
-// review, including a brand-new card. Plain SM-2 gives every passing grade interval=1 on the first
-// review (grade only nudged ease, which doesn't bite until rep 3), so Hard/Good/Easy all read "1d"
-// and the buttons feel pointless. Instead, grades drive the interval directly: a new card graduates
-// on a per-grade ramp (Hard 1d · Good 3d · Easy 7d), and an established card grows by a grade-specific
-// factor of its current interval (Hard slow, Good × ease, Easy × ease with a bonus).
+// FSRS is grade-aware by construction: a new card's opening grade sets its initial stability directly
+// (Again≈0.5d · Hard≈1d · Good≈4d · Easy≈14d), so the four buttons mean something on every review without
+// the per-grade ramp SM-2 needed (C3). See ./fsrs.ts for the model itself.
+import {
+  initDifficulty,
+  initStability,
+  intervalFromStability,
+  nextDifficulty,
+  nextLapseStability,
+  nextRecallStability,
+  retrievability,
+} from "./fsrs";
 import type { Grade, ReviewState, ReviewStore } from "./types";
 
-/** SM-2 starting ease factor and its hard floor. */
-const INITIAL_EASE = 2.5;
-const MIN_EASE = 1.3;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** First-pass ("graduating") interval in days, per grade — what a brand-new card jumps to. */
-const GRADUATING_DAYS: Record<Exclude<Grade, "again">, number> = { hard: 1, good: 3, easy: 7 };
-/** Hard grows the interval slowly (instead of by ease); never less than +1 day so it still advances. */
-const HARD_MULT = 1.2;
-/** Easy gets a bonus on top of ease, so "I really know this" pushes the interval out faster. */
-const EASY_BONUS = 1.3;
-
-/**
- * Map the 4-button grade onto SM-2's 0–5 quality scale.
- * "again" (< 3) is a lapse; hard/good/easy are increasing passes. The pass values only steer
- * the ease nudge in {@link nextEase} — kept simple and well-spread across the scale.
- */
-const QUALITY: Record<Grade, number> = { again: 1, hard: 3, good: 4, easy: 5 };
-
-/** Fresh state for a card that has never been reviewed — due immediately (a "new" card). */
+/** Fresh state for a card that has never been reviewed — due immediately, with no FSRS memory yet. */
 export function newReviewState(cardId: string, now: Date): ReviewState {
   return {
     cardId,
     reps: 0,
     lapses: 0,
     intervalDays: 0,
-    ease: INITIAL_EASE,
+    stability: 0, // set on the first review (initStability)
+    difficulty: 0, // set on the first review (initDifficulty)
     due: now.toISOString(),
     lastReviewedAt: null,
     lastGrade: null,
@@ -52,55 +44,61 @@ function addDays(now: Date, days: number): string {
   return new Date(now.getTime() + days * DAY_MS).toISOString();
 }
 
-/** SM-2 ease-factor update for a given quality, clamped at the floor. */
-function nextEase(ease: number, quality: number): number {
-  const updated = ease + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-  return Math.max(MIN_EASE, updated);
+/** Days elapsed since the last review (fractional). 0 if the card was never reviewed or the clock skews. */
+function elapsedDays(state: ReviewState, now: Date): number {
+  if (!state.lastReviewedAt) return 0;
+  return Math.max(0, (now.getTime() - new Date(state.lastReviewedAt).getTime()) / DAY_MS);
 }
 
 /**
- * The SM-2 step: given the previous state, a grade, and the current time, return the next state.
+ * The FSRS step: given the previous state, a grade, and the current time, return the next state.
  * Pure — returns a new object, never mutates the input.
+ *
+ * A brand-new card (never reviewed → lastReviewedAt null) seeds its memory from the opening grade. An
+ * established card updates stability/difficulty from how retrievable it was at review time. Note a card
+ * is "new" by `lastReviewedAt`, not by `reps`: a lapse resets reps to 0 but the card keeps its FSRS
+ * memory, so a relapse still grows from the reduced post-lapse stability.
  */
 export function schedule(state: ReviewState, grade: Grade, now: Date): ReviewState {
-  const quality = QUALITY[grade];
-  const ease = nextEase(state.ease, quality);
+  const isNew = state.lastReviewedAt === null;
 
-  // A lapse ("again"): restart the repetition count and re-show the card the same day.
-  if (quality < 3) {
+  let stability: number;
+  let difficulty: number;
+  if (isNew) {
+    stability = initStability(grade);
+    difficulty = initDifficulty(grade);
+  } else {
+    const r = retrievability(elapsedDays(state, now), state.stability);
+    stability =
+      grade === "again"
+        ? nextLapseStability(state.difficulty, state.stability, r)
+        : nextRecallStability(state.difficulty, state.stability, r, grade);
+    difficulty = nextDifficulty(state.difficulty, grade);
+  }
+
+  // A lapse ("again") restarts the rep streak and re-shows the card the same day (lightweight relearning);
+  // the reduced stability above is what the next successful interval will grow from.
+  if (grade === "again") {
     return {
       ...state,
       reps: 0,
       lapses: state.lapses + 1,
       intervalDays: 0,
-      ease,
+      stability,
+      difficulty,
       due: now.toISOString(),
       lastReviewedAt: now.toISOString(),
       lastGrade: grade,
     };
   }
 
-  // A pass: grade-aware interval. A new card (reps 0) graduates on the fixed per-grade ramp; an
-  // established card grows by a grade-specific factor of its current interval. (See the file header.)
-  const pass = grade as Exclude<Grade, "again">;
-  let intervalDays: number;
-  if (state.reps === 0) {
-    intervalDays = GRADUATING_DAYS[pass];
-  } else {
-    const grown =
-      pass === "hard"
-        ? Math.max(state.intervalDays + 1, Math.round(state.intervalDays * HARD_MULT))
-        : pass === "good"
-          ? Math.round(state.intervalDays * ease)
-          : Math.round(state.intervalDays * ease * EASY_BONUS);
-    intervalDays = Math.max(1, grown);
-  }
-
+  const intervalDays = intervalFromStability(stability);
   return {
     ...state,
     reps: state.reps + 1,
     intervalDays,
-    ease,
+    stability,
+    difficulty,
     due: addDays(now, intervalDays),
     lastReviewedAt: now.toISOString(),
     lastGrade: grade,
