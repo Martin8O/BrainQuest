@@ -20,6 +20,8 @@ const cfg: VaultConfig = {
   vaultPath: "/vault",
   folders: { learning: "learning", concepts: "concepts" },
   harvest: { cardsHeading: "📘 Nové pojmy", recallHeading: "❓ K probrání příště", relatedHeading: "Související" },
+  tags: { hubPrefix: "Patří k:", projectTagPrefix: "project/" },
+  areas: { labels: {}, offByDefault: [] },
 };
 
 describe("small field parsers", () => {
@@ -41,9 +43,11 @@ describe("small field parsers", () => {
     expect(parseDateFromSlug("concept-without-date")).toBeNull();
   });
 
-  it("parseHub extracts the `Patří k: [[Hub]]` target", () => {
-    expect(parseHub("intro\nPatří k: [[BrainQuest]]\nmore")).toBe("BrainQuest");
-    expect(parseHub("no hub line")).toBeNull();
+  it("parseHub extracts the configured-prefix `[[Hub]]` target", () => {
+    expect(parseHub("intro\nPatří k: [[BrainQuest]]\nmore", "Patří k:")).toBe("BrainQuest");
+    expect(parseHub("no hub line", "Patří k:")).toBeNull();
+    // The prefix is config-driven, so another brain's convention works too.
+    expect(parseHub("Belongs to: [[Hub]]", "Belongs to:")).toBe("Hub");
   });
 
   it("parseGloss returns the first bold definition line, markdown stripped", () => {

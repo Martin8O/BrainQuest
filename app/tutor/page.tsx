@@ -4,6 +4,7 @@
 // vault grows as Martin learns. READ-ONLY: this page never writes the vault.
 import Link from "next/link";
 import { readVault } from "@/lib/vault/reader";
+import { loadVaultConfig } from "@/lib/vault/config";
 import { areaForProjects } from "@/lib/tutor/area";
 import TutorClient from "./TutorClient";
 import type { TutorArea, TutorPrompt } from "./types";
@@ -12,12 +13,13 @@ export const dynamic = "force-dynamic";
 
 export default async function TutorPage() {
   const vault = await readVault();
+  const cfg = loadVaultConfig();
 
   // Tag each recall prompt with its area (the project its source note belongs to), so the client can
   // filter by category. The vault is cross-project; this is what lets the learner skip the niche.
   const projectsBySlug = new Map(vault.learning.map((n) => [n.slug, n.projects]));
   const prompts: TutorPrompt[] = vault.harvest.recall.map((r) => {
-    const area = areaForProjects(projectsBySlug.get(r.sourceSlug) ?? []);
+    const area = areaForProjects(projectsBySlug.get(r.sourceSlug) ?? [], cfg);
     return { id: r.id, question: r.question, sourceSlug: r.sourceSlug, areaKey: area.key, areaLabel: area.label };
   });
 
@@ -26,7 +28,13 @@ export default async function TutorPage() {
   for (const p of prompts) {
     const cur = areaMap.get(p.areaKey);
     if (cur) cur.count += 1;
-    else areaMap.set(p.areaKey, { key: p.areaKey, label: p.areaLabel, count: 1, defaultOn: areaForProjects([`project/${p.areaKey}`]).defaultOn });
+    else
+      areaMap.set(p.areaKey, {
+        key: p.areaKey,
+        label: p.areaLabel,
+        count: 1,
+        defaultOn: areaForProjects([`${cfg.tags.projectTagPrefix}${p.areaKey}`], cfg).defaultOn,
+      });
   }
   const areas: TutorArea[] = [...areaMap.values()].sort((a, b) => b.count - a.count);
 

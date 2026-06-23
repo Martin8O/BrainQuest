@@ -1,5 +1,5 @@
 {
-  "_comment": "BrainQuest vault config (A2 stub). Single source of truth for WHERE the vault is and WHICH structure to read. Read-only — the app never writes here. Override the path per-machine with the BRAINQUEST_VAULT_PATH env var (the repo is synced via GitHub, so this absolute path is machine-specific). Generalized further in E1.",
+  "_comment": "BrainQuest vault config — the single source of truth for WHERE the vault is and HOW to read it (path, harvested headings, tag scheme, tutor areas). Read-only — the app never writes here. Override the path per-machine with the BRAINQUEST_VAULT_PATH env var (the repo is synced via GitHub, so this absolute path is machine-specific). Point BrainQuest at another brain by editing the values below; any omitted section falls back to the vault defaults baked into lib/vault/config.ts.",
   "vaultPath": "D:/path/to/your/vault",
   "folders": {
     "learning": "learning",
@@ -9,5 +9,18 @@
     "cardsHeading": "📘 Nové pojmy",
     "recallHeading": "❓ K probrání příště",
     "relatedHeading": "Související"
+  },
+  "tags": {
+    "hubPrefix": "Patří k:",
+    "projectTagPrefix": "project/"
+  },
+  "areas": {
+    "labels": {
+      "brainquest": "BrainQuest",
+      "example-project": "Example Project",
+      "advanced-topic": "Advanced Topic",
+      "advanced-topic": "RL"
+    },
+    "offByDefault": ["advanced-topic"]
   }
 }

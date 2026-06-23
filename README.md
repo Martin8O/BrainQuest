@@ -33,6 +33,21 @@ The vault path comes from `vault.config.json` (override per-machine with the `BR
 For the AI tutor, run a local Ollama with the configured model (defaults to `qwen2.5`); without it, the rest
 of the app still works and the tutor shows a friendly "offline" message.
 
+## Point at another vault
+BrainQuest defaults to one specific `vault`, but it reads *how* to read a vault from `vault.config.json` —
+so you can point it at a different Obsidian brain by editing config, not code. No data migration: your review
+progress in `data/` is untouched, and the vault itself is only ever read.
+
+Edit `vault.config.json`:
+- `vaultPath` — the vault folder (or set the `BRAINQUEST_VAULT_PATH` env var per-machine, which wins).
+- `folders` — the subfolders holding learning notes and concept notes.
+- `harvest` — the section headings to harvest: cards, recall prompts, and the related-concepts list.
+- `tags` — `hubPrefix` (the line naming a note's hub, e.g. `Patří k:`) and `projectTagPrefix` (e.g. `project/`).
+- `areas` — friendly `labels` per project slug for the tutor's category filter, and `offByDefault` slugs hidden
+  until you opt in.
+
+Any section you omit falls back to the built-in `vault` defaults, so a minimal config still boots.
+
 ## Quality gate
 One command runs the whole gate — types, lint, unit tests, production build — and must be green before a commit:
 ```

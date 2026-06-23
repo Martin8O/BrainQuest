@@ -3,7 +3,7 @@
 // prompt's source note belongs to. The vault is cross-project, so without this the tutor mixes RL,
 // Example Project, Advanced Topic and BrainQuest together; the filter lets the learner focus and skip the niche.
 export interface TutorAreaDef {
-  /** Stable key (the project slug without the "project/" prefix), e.g. "brainquest", "advanced-topic". */
+  /** Stable key (the project slug without the project-tag prefix), e.g. "brainquest", "advanced-topic". */
   key: string;
   /** Learner-facing label shown on the toggle chip. */
   label: string;
@@ -11,16 +11,11 @@ export interface TutorAreaDef {
   defaultOn: boolean;
 }
 
-/** Friendly labels for the known projects; unknown slugs are prettified from the slug. */
-const LABELS: Record<string, string> = {
-  "brainquest": "BrainQuest",
-  "example-project": "Example Project",
-  "advanced-topic": "Advanced Topic",
-  "advanced-topic": "RL",
-};
-
-/** Areas hidden by default — niche/deep material the learner opts into rather than wades through. */
-const OFF_BY_DEFAULT = new Set(["advanced-topic"]);
+/** The slice of vault config the area mapping needs (labels, off-by-default, and the project-tag prefix). */
+export interface AreaConfig {
+  tags: { projectTagPrefix: string };
+  areas: { labels: Record<string, string>; offByDefault: string[] };
+}
 
 /** Bucket for a note with no project tag at all. */
 const OTHER_KEY = "other";
@@ -31,11 +26,17 @@ function prettify(slug: string): string {
 }
 
 /**
- * Map a learning note's project tags to a single tutor area. The first `project/…` tag wins (notes
- * carry one in practice); a note with none falls into "other" (kept ON, so nothing silently vanishes).
+ * Map a learning note's project tags to a single tutor area. The first project tag wins (notes carry one
+ * in practice); a note with none falls into "other" (kept ON, so nothing silently vanishes). Labels and
+ * the off-by-default set come from vault config, so another brain ships its own areas (E1).
  */
-export function areaForProjects(projects: string[]): TutorAreaDef {
-  const tag = projects.find((p) => p.startsWith("project/")) ?? projects[0];
-  const slug = tag ? tag.replace(/^project\//, "") : OTHER_KEY;
-  return { key: slug, label: LABELS[slug] ?? prettify(slug), defaultOn: !OFF_BY_DEFAULT.has(slug) };
+export function areaForProjects(projects: string[], cfg: AreaConfig): TutorAreaDef {
+  const prefix = cfg.tags.projectTagPrefix;
+  const tag = projects.find((p) => p.startsWith(prefix)) ?? projects[0];
+  const slug = tag ? tag.slice(tag.startsWith(prefix) ? prefix.length : 0) : OTHER_KEY;
+  return {
+    key: slug,
+    label: cfg.areas.labels[slug] ?? prettify(slug),
+    defaultOn: !cfg.areas.offByDefault.includes(slug),
+  };
 }

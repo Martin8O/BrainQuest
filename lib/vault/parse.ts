@@ -30,9 +30,14 @@ export function parseDateFromSlug(slug: string): string | null {
   return m ? m[1] : null;
 }
 
-/** `Patří k: [[Hub]]` → "Hub", or null. */
-export function parseHub(md: string): string | null {
-  const m = md.match(/Patří k:\s*\[\[([^\]]+)\]\]/);
+/** Escape a config-supplied literal so it's safe to drop into a RegExp. */
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** `<hubPrefix> [[Hub]]` → "Hub", or null. Prefix is config-driven (default "Patří k:"). */
+export function parseHub(md: string, hubPrefix: string): string | null {
+  const m = md.match(new RegExp(`${escapeRegExp(hubPrefix)}\\s*\\[\\[([^\\]]+)\\]\\]`));
   return m ? m[1].trim() : null;
 }
 
@@ -135,8 +140,8 @@ export function parseLearningNote(slug: string, path: string, md: string, cfg: V
     title: parseTitle(md) ?? slug,
     tags,
     date: parseDateFromSlug(slug),
-    hub: parseHub(md),
-    projects: tags.filter((t) => t.startsWith("project/")),
+    hub: parseHub(md, cfg.tags.hubPrefix),
+    projects: tags.filter((t) => t.startsWith(cfg.tags.projectTagPrefix)),
     cards,
     recall,
   };
