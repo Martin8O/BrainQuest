@@ -4,7 +4,7 @@
 // our schema. Imported only by the "use server" tutor action. Reproducible: the transport pins seed +
 // temperature, so the same note yields the same ladder — which is also why caching it is safe.
 import fs from "node:fs/promises";
-import { callOllamaJson } from "./ollama";
+import { callTutorJson } from "./llm";
 import { loadTutorConfig } from "./config";
 import {
   RUNGS,
@@ -64,7 +64,7 @@ export async function getLadder(args: {
   const hit = getCachedVariations(cache, args.promptId, noteHash, model);
   if (hit) return { variations: hit, cached: true };
 
-  const raw = await callOllamaJson({
+  const raw = await callTutorJson({
     system: VARIATION_SYSTEM_PROMPT,
     user: buildVariationPrompt(args.question, noteText),
     schema: VARIATION_SCHEMA,

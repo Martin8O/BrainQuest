@@ -9,16 +9,18 @@
 // the second visit is instant. Picking the next prompt uses Math.random() inside a click handler only
 // (never during render) — UI variety, no reproducibility concern and no hydration mismatch.
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AreaFilter } from "../components/AreaFilter";
 import { gradeRecallAnswer, getVariations } from "./actions";
 import type { GradeResponse, GradeResult, Variation, VariationLadder, Verdict } from "@/lib/tutor/types";
 import type { TutorArea, TutorPrompt } from "./types";
 
 /** Per-verdict styling — the headline badge + score colour. */
 const VERDICT: Record<Verdict, { label: string; badge: string; bar: string }> = {
-  correct: { label: "Výborně", badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200", bar: "bg-emerald-500" },
-  partial: { label: "Skoro", badge: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200", bar: "bg-amber-500" },
-  incorrect: { label: "Ještě ne", badge: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200", bar: "bg-rose-500" },
+  correct: { label: "Correct", badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200", bar: "bg-emerald-500" },
+  partial: { label: "Almost", badge: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200", bar: "bg-amber-500" },
+  incorrect: { label: "Not yet", badge: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200", bar: "bg-rose-500" },
 };
 
 /** localStorage key for the area filter (per-device UI preference, not learning data). */
@@ -33,14 +35,32 @@ function randomId(pool: TutorPrompt[], avoid?: string): string {
   return id;
 }
 
-export default function TutorClient({ prompts, areas }: { prompts: TutorPrompt[]; areas: TutorArea[] }) {
+export default function TutorClient({
+  prompts,
+  areas,
+  fromSession = false,
+  initialPromptId,
+}: {
+  prompts: TutorPrompt[];
+  areas: TutorArea[];
+  fromSession?: boolean;
+  /** When set (forwarded from a session card), open on this prompt and force its area on. */
+  initialPromptId?: string;
+}) {
   // Which areas (projects) are active. Init from each area's default (RL off) — deterministic, so the
   // server render and first client render match; a saved preference is applied in an effect after mount.
-  const [enabled, setEnabled] = useState<Set<string>>(() => new Set(areas.filter((a) => a.defaultOn).map((a) => a.key)));
+  // A forwarded card's area is forced on so its prompt is reachable even if that area is off by default.
+  const [enabled, setEnabled] = useState<Set<string>>(() => {
+    const on = new Set(areas.filter((a) => a.defaultOn).map((a) => a.key));
+    const fwdArea = initialPromptId ? prompts.find((p) => p.id === initialPromptId)?.areaKey : undefined;
+    if (fwdArea) on.add(fwdArea);
+    return on;
+  });
 
   const pool = useMemo(() => prompts.filter((p) => enabled.has(p.areaKey)), [prompts, enabled]);
 
   const [currentId, setCurrentId] = useState<string>(() => {
+    if (initialPromptId) return initialPromptId; // opened on the card's topic
     const on = new Set(areas.filter((a) => a.defaultOn).map((a) => a.key));
     return prompts.find((p) => on.has(p.areaKey))?.id ?? prompts[0]?.id ?? "";
   });
@@ -67,8 +87,10 @@ export default function TutorClient({ prompts, areas }: { prompts: TutorPrompt[]
   const ladderLoading = !!promptId && !ready; // until the current prompt's ladder lands, we're (re)generating
 
   // Apply a saved area preference once on mount (per-device). Init above is the deterministic default, so
-  // the first paint matches the server; this only adjusts afterwards → no hydration mismatch.
+  // the first paint matches the server; this only adjusts afterwards → no hydration mismatch. Skipped when
+  // forwarded from a card: that visit is a focused "practice this topic", so we keep its prompt + area.
   useEffect(() => {
+    if (initialPromptId) return;
     try {
       const raw = localStorage.getItem(AREAS_KEY);
       if (!raw) return;
@@ -78,7 +100,7 @@ export default function TutorClient({ prompts, areas }: { prompts: TutorPrompt[]
     } catch {
       // ignore a malformed/blocked localStorage — defaults already apply
     }
-  }, [areas]);
+  }, [areas, initialPromptId]);
 
   // Fetch (or reuse the server cache of) the ladder whenever the prompt changes. The cancelled flag drops
   // a slow generation for a prompt the learner has already skipped past (stale-response race). No
@@ -150,7 +172,7 @@ export default function TutorClient({ prompts, areas }: { prompts: TutorPrompt[]
       // Grade the exact question the learner saw (the chosen variation), against its source note.
       setResponse(await gradeRecallAnswer(promptId, answer, shownQuestion));
     } catch {
-      setResponse({ ok: false, code: "api", error: "Hodnocení selhalo (síť?). Zkus to znovu." });
+      setResponse({ ok: false, code: "api", error: "Grading failed (network?). Try again." });
     } finally {
       setPending(false);
     }
@@ -166,7 +188,7 @@ export default function TutorClient({ prompts, areas }: { prompts: TutorPrompt[]
       {!prompt ? (
         <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
           <div className="text-3xl">🗂️</div>
-          <p className="mt-3 text-zinc-600 dark:text-zinc-400">Zapni aspoň jednu oblast nahoře, ať je z čeho vybírat.</p>
+          <p className="mt-3 text-zinc-600 dark:text-zinc-400">Turn on at least one area above to get questions.</p>
         </div>
       ) : (
         <>
@@ -201,7 +223,7 @@ export default function TutorClient({ prompts, areas }: { prompts: TutorPrompt[]
               }}
               disabled={pending}
               rows={5}
-              placeholder="Odpověz vlastními slovy…"
+              placeholder="Answer in your own words…"
               className="mt-4 w-full resize-y rounded-xl border border-zinc-300 bg-white p-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-indigo-900"
             />
 
@@ -211,7 +233,7 @@ export default function TutorClient({ prompts, areas }: { prompts: TutorPrompt[]
                 disabled={pending || !answer.trim()}
                 className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50"
               >
-                {pending ? "Hodnotím…" : "Ohodnotit odpověď"}
+                {pending ? "Grading…" : "Grade answer"}
                 {!pending && <span className="ml-1 opacity-60">(⌘/Ctrl+↵)</span>}
               </button>
               <button
@@ -219,7 +241,7 @@ export default function TutorClient({ prompts, areas }: { prompts: TutorPrompt[]
                 disabled={pending}
                 className="text-sm text-zinc-500 underline hover:text-zinc-700 disabled:opacity-50 dark:hover:text-zinc-300"
               >
-                Další otázka →
+                Next question →
               </button>
             </div>
           </div>
@@ -235,53 +257,23 @@ export default function TutorClient({ prompts, areas }: { prompts: TutorPrompt[]
         </>
       )}
 
-      <div className="mt-6 text-center">
-        <Link href="/" className="text-sm text-zinc-500 underline hover:text-zinc-700">
-          Back to overview
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-/**
- * The category filter: one chip per area (project) with its prompt count. Active areas are filled;
- * inactive are muted. Niche areas (RL) start OFF, so the tutor focuses on what matters and the learner
- * opts the rest in. The choice persists per device.
- */
-function AreaFilter({ areas, enabled, onToggle }: { areas: TutorArea[]; enabled: Set<string>; onToggle: (key: string) => void }) {
-  if (areas.length <= 1) return null; // nothing to filter
-  return (
-    <div className="mb-4">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 text-xs font-medium uppercase tracking-wide text-zinc-400">Oblasti</span>
-        {areas.map((a) => {
-          const on = enabled.has(a.key);
-          return (
-            <button
-              key={a.key}
-              onClick={() => onToggle(a.key)}
-              aria-pressed={on}
-              title={on ? `${a.label} — zapnuto (klik vypne)` : `${a.label} — vypnuto (klik zapne)`}
-              className={[
-                "rounded-full px-2.5 py-1 text-xs font-medium transition",
-                on
-                  ? "bg-indigo-600 text-white"
-                  : "bg-zinc-100 text-zinc-400 line-through hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-500 dark:hover:bg-zinc-700",
-              ].join(" ")}
-            >
-              {a.label} <span className="tabular-nums opacity-70">{a.count}</span>
-            </button>
-          );
-        })}
-      </div>
+      {fromSession && (
+        <div className="mt-6 text-center">
+          <Link
+            href="/session"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to session
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
 
 /**
  * The difficulty selector: four rungs from easy → hard. The learner's calibrated start rung is ringed
- * ("tvoje úroveň"), the selected one is filled. While the model generates (first visit), the original
+ * (their level), the selected one is filled. While the model generates (first visit), the original
  * question stays up and a subtle hint shows; if generation is unavailable, a soft note explains the
  * fallback. Each chip is clickable so the learner can warm up easier or push harder at will.
  */
@@ -300,7 +292,7 @@ function LadderBar({
 }) {
   if (!ladder) {
     // No ladder yet: show the generation hint (loading) or the fallback note (failed) — or nothing.
-    const msg = loading ? "Připravuji obtížnostní varianty otázky…" : note;
+    const msg = loading ? "Generating difficulty variations…" : note;
     if (!msg) return <div className="mb-3" />;
     return (
       <div className="mb-3 flex items-center gap-2 text-xs text-zinc-500">
@@ -315,7 +307,7 @@ function LadderBar({
   return (
     <div className="mb-3">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 text-xs font-medium uppercase tracking-wide text-zinc-400">Obtížnost</span>
+        <span className="mr-1 text-xs font-medium uppercase tracking-wide text-zinc-400">Difficulty</span>
         {ladder.variations.map((v) => {
           const selected = v.level === level;
           const isStart = v.level === ladder.startLevel;
@@ -338,8 +330,8 @@ function LadderBar({
         })}
       </div>
       <p className="mt-1.5 text-xs text-zinc-400">
-        Start na úrovni <span className="font-semibold text-indigo-500">{ladder.startLevel}</span> podle tvé znalosti
-        tématu — klidně si přidej, nebo začni lehčeji.
+        Starting at level <span className="font-semibold text-indigo-500">{ladder.startLevel}</span> based on your mastery
+        of this topic — push harder, or warm up easier.
       </p>
     </div>
   );
@@ -360,16 +352,16 @@ function GradeCard({ result }: { result: GradeResult }) {
       {result.summary && <p className="mt-4 text-zinc-700 dark:text-zinc-300">{result.summary}</p>}
 
       {result.gotRight.length > 0 && (
-        <Section title="Co ti vyšlo" rows={result.gotRight} mark="✓" markClass="text-emerald-600 dark:text-emerald-400" />
+        <Section title="What you got right" rows={result.gotRight} mark="✓" markClass="text-emerald-600 dark:text-emerald-400" />
       )}
       {result.missed.length > 0 && (
-        <Section title="Co ti uniklo" rows={result.missed} mark="✗" markClass="text-rose-600 dark:text-rose-400" />
+        <Section title="What you missed" rows={result.missed} mark="✗" markClass="text-rose-600 dark:text-rose-400" />
       )}
 
       {result.modelAnswer && (
         <div className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-900 dark:bg-indigo-950/50">
           <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
-            Vzorová odpověď
+            Model answer
           </div>
           <p className="mt-1 whitespace-pre-line text-sm text-zinc-700 dark:text-zinc-300">{result.modelAnswer}</p>
         </div>

@@ -22,6 +22,7 @@ const cfg: VaultConfig = {
   harvest: { cardsHeading: "📘 Nové pojmy", recallHeading: "❓ K probrání příště", relatedHeading: "Související" },
   tags: { hubPrefix: "Patří k:", projectTagPrefix: "project/" },
   areas: { labels: {}, offByDefault: [] },
+  tutor: { provider: "ollama", model: "qwen2.5", baseUrl: "http://127.0.0.1:11434" },
 };
 
 describe("small field parsers", () => {
@@ -74,6 +75,14 @@ describe("sectionItems", () => {
 
   it("returns [] for a heading that is not present", () => {
     expect(sectionItems(md, "Neexistuje")).toEqual([]);
+  });
+
+  it("matches any heading in an alias list (so English/Czech vaults both harvest)", () => {
+    const english = "## 📘 New concepts\n- **term** — bullet";
+    // The Czech note matches the Czech alias; the English note matches the English alias — same config.
+    const aliases = ["📘 New concepts", "📘 Nové pojmy"];
+    expect(sectionItems(md, aliases)).toEqual(["- **term** — real bullet", "- another real bullet"]);
+    expect(sectionItems(english, aliases)).toEqual(["- **term** — bullet"]);
   });
 });
 

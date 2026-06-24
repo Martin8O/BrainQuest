@@ -5,6 +5,7 @@
 // edges. This component owns ONLY the view (pan / zoom) and the selection. Clicking a node selects it
 // and the side panel shows that concept's cards + the notes they came from. No layout math runs here.
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Lock } from "lucide-react";
 import type { MasteryLevel } from "@/lib/progress/types";
 import type { MapNode, PanelCard, SkillMap } from "@/lib/graph/types";
 
@@ -43,12 +44,17 @@ interface View {
 export default function MapClient({
   map,
   cardsByConcept,
+  initialFocus = null,
 }: {
   map: SkillMap;
   cardsByConcept: Record<string, PanelCard[]>;
+  /** Concept to pre-select (from `/map?focus=…`) — resolved case-insensitively to a node. */
+  initialFocus?: string | null;
 }) {
   const [view, setView] = useState<View>({ x: 0, y: 0, scale: 1 });
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(
+    () => map.nodes.find((n) => n.concept.toLowerCase() === (initialFocus ?? "").toLowerCase())?.concept ?? null,
+  );
   const [hovered, setHovered] = useState<string | null>(null);
   const [showLabels, setShowLabels] = useState(false);
 
@@ -353,8 +359,8 @@ function NodeDetail({
           </span>
         )}
         {node.locked && (
-          <span className="rounded-full bg-zinc-100 px-2 py-1 text-zinc-500 dark:bg-zinc-800" title="All neighbours are still untouched">
-            🔒 Locked
+          <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-zinc-500 dark:bg-zinc-800" title="All neighbours are still untouched">
+            <Lock className="h-3 w-3" /> Locked
           </span>
         )}
       </div>
@@ -409,25 +415,35 @@ function Legend() {
       <h2 className="mb-3 text-sm font-semibold">Legend</h2>
       <ul className="space-y-2 text-sm">
         {(["mastered", "young", "learning", "untouched"] as MasteryLevel[]).map((lvl) => (
-          <li key={lvl} className="flex items-center gap-2">
-            <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: LEVEL[lvl].fill }} />
-            {LEVEL[lvl].label}
+          <li key={lvl} className="flex items-center gap-2.5">
+            <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: LEVEL[lvl].fill }} />
+            <span>{LEVEL[lvl].label}</span>
           </li>
         ))}
-        <li className="flex items-center gap-2 text-zinc-500">
-          <span className="inline-block h-3 w-3 rounded-full border-2 border-zinc-400" />
-          🔒 Locked — hollow ring; every neighbour still untouched
+      </ul>
+      <hr className="my-3 border-zinc-200 dark:border-zinc-800" />
+      <ul className="space-y-2 text-sm text-zinc-500">
+        <li className="flex items-start gap-2.5">
+          <span className="mt-1 inline-block h-3 w-3 shrink-0 rounded-full border-2 border-zinc-400" />
+          <span>
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">Locked</span> — hollow ring; every neighbour still untouched
+          </span>
         </li>
-        <li className="flex items-center gap-2 text-zinc-500">
-          <span className="inline-block h-3 w-3 rounded-full bg-zinc-400" />
-          Available — solid dot; reachable from what you know
+        <li className="flex items-start gap-2.5">
+          <span className="mt-1 inline-block h-3 w-3 shrink-0 rounded-full bg-zinc-400" />
+          <span>
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">Available</span> — solid dot; reachable from what you know
+          </span>
         </li>
       </ul>
-      <hr className="my-4 border-zinc-200 dark:border-zinc-800" />
+      <hr className="my-3 border-zinc-200 dark:border-zinc-800" />
       <p className="text-xs leading-relaxed text-zinc-500">
-        Coloured areas are <span className="font-medium">topics</span> (related concepts cluster together); the grey
-        <span className="font-medium"> Unlinked</span> area holds concepts with no relations yet. Drag to pan · scroll or
-        <span className="font-medium"> + / −</span> to zoom · click a node for its cards. Dots turn green as you review.
+        Coloured areas are <span className="font-medium">topics</span> (related concepts cluster together); the grey{" "}
+        <span className="font-medium">Unlinked</span> area holds concepts with no relations yet.
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+        Drag to pan · scroll or <span className="font-medium">+ / −</span> to zoom · click a node for its cards. Dots turn
+        green as you review.
       </p>
     </div>
   );

@@ -1,7 +1,7 @@
 // Progress page (server component). Reads the harvest (B1) + review store (B2), derives the whole
 // mastery picture with the pure computeProgress(), and renders it: overall, per-concept ("where am I
 // vs. everything ahead"), and per-cluster. force-dynamic because it reflects the live review store.
-import Link from "next/link";
+import { TrendingUp } from "lucide-react";
 import { readVault } from "@/lib/vault/reader";
 import { loadReviewStore } from "@/lib/srs/store";
 import { computeProgress } from "@/lib/progress/mastery";
@@ -38,14 +38,11 @@ export default async function ProgressPage() {
 
   return (
     <main className="mx-auto w-full max-w-4xl px-5 py-10 sm:px-8 sm:py-14">
-      <header className="mb-8 flex items-baseline justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">📊 Progress</h1>
-          <p className="mt-1 text-sm text-zinc-500">How much you know vs. what&apos;s still ahead — grows as your vault does.</p>
-        </div>
-        <Link href="/" className="shrink-0 text-sm text-zinc-500 underline hover:text-zinc-700">
-          Overview
-        </Link>
+      <header className="mb-8">
+        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
+          <TrendingUp className="h-6 w-6 text-emerald-500" strokeWidth={2} /> Progress
+        </h1>
+        <p className="mt-1 text-sm text-zinc-500">How much you know vs. what&apos;s still ahead — grows as your vault does.</p>
       </header>
 
       {!vault.ok && (

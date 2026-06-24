@@ -1,6 +1,7 @@
 // The game HUD — Level + XP bar + Streak + a 14-day activity strip. Pure presentation: it takes a
 // computed GamificationState (lib/gamification) and renders it, no data access of its own, so it works
 // as a server component on the home page and is reused verbatim in the session "unlock" celebration.
+import { Flame } from "lucide-react";
 import type { GamificationState } from "@/lib/gamification/types";
 
 /** A capped intensity 0..1 for an activity-strip bar, so one huge day doesn't flatten the rest. */
@@ -53,9 +54,10 @@ function StreakBlock({ g }: { g: GamificationState }) {
     <div className="flex shrink-0 items-center gap-4">
       <div className="text-right">
         <div className="flex items-center justify-end gap-1.5">
-          <span className={`text-2xl leading-none ${streak.current > 0 && streak.todayActive ? "flame-lit" : "flame-cold"}`}>
-            🔥
-          </span>
+          <Flame
+            className={`h-6 w-6 ${streak.current > 0 && streak.todayActive ? "flame-lit fill-amber-400 text-amber-500" : "flame-cold text-zinc-400"}`}
+            strokeWidth={2}
+          />
           <span className="text-2xl font-bold tabular-nums">{streak.current}</span>
         </div>
         <div className="mt-0.5 text-xs text-zinc-500">

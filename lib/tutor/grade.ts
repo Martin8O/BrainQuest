@@ -3,12 +3,12 @@
 // learner's answer against it, constraining the reply to our JSON schema. No API key, no network beyond
 // localhost. Imported only by the "use server" tutor action.
 import fs from "node:fs/promises";
-import { callOllamaJson, OllamaOfflineError, ModelMissingError } from "./ollama";
+import { callTutorJson, OllamaOfflineError, ModelMissingError, TutorAuthError } from "./llm";
 import { GRADE_SCHEMA, SYSTEM_PROMPT, buildUserPrompt, isVerdict } from "./prompt";
 import type { GradeResult } from "./types";
 
 // Re-export the transport errors so existing callers (the tutor action) keep importing them from here.
-export { OllamaOfflineError, ModelMissingError };
+export { OllamaOfflineError, ModelMissingError, TutorAuthError };
 
 /** Read a learning note from disk (read-only). Bubbles up if the path is gone. */
 async function readNote(sourcePath: string): Promise<string> {
@@ -46,7 +46,7 @@ export async function gradeAnswer(args: {
   answer: string;
 }): Promise<GradeResult> {
   const noteText = await readNote(args.sourcePath);
-  const raw = await callOllamaJson({
+  const raw = await callTutorJson({
     system: SYSTEM_PROMPT,
     user: buildUserPrompt(args.question, noteText, args.answer),
     schema: GRADE_SCHEMA,

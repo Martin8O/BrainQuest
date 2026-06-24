@@ -1,17 +1,17 @@
 {
-  "_comment": "BrainQuest vault config — the single source of truth for WHERE the vault is and HOW to read it (path, harvested headings, tag scheme, tutor areas). Read-only — the app never writes here. Override the path per-machine with the BRAINQUEST_VAULT_PATH env var (the repo is synced via GitHub, so this absolute path is machine-specific). Point BrainQuest at another brain by editing the values below; any omitted section falls back to the vault defaults baked into lib/vault/config.ts.",
+  "_comment": "BrainQuest config — the single source of truth for WHERE the vault is and HOW to read it (path, harvested headings, tag scheme, tutor areas) plus the AI tutor backend. The Settings page (/settings) writes the vaultPath and the tutor section here; nothing else is written and the vault itself stays read-only. API keys never live here — they go in local/.env. Override the path per-machine with the BRAINQUEST_VAULT_PATH env var (the repo is synced via GitHub, so this absolute path is machine-specific). Any omitted section falls back to the vault defaults baked into lib/vault/config.ts.",
   "vaultPath": "D:/path/to/your/vault",
   "folders": {
     "learning": "learning",
     "concepts": "concepts"
   },
   "harvest": {
-    "cardsHeading": "📘 Nové pojmy",
-    "recallHeading": "❓ K probrání příště",
-    "relatedHeading": "Související"
+    "cardsHeading": ["📘 Nové pojmy", "📘 New concepts", "New concepts"],
+    "recallHeading": ["❓ K probrání příště", "❓ To review next", "To review next"],
+    "relatedHeading": ["Související", "Related"]
   },
   "tags": {
-    "hubPrefix": "Patří k:",
+    "hubPrefix": ["Patří k:", "Belongs to:"],
     "projectTagPrefix": "project/"
   },
   "areas": {
@@ -21,6 +21,13 @@
       "advanced-topic": "Advanced Topic",
       "advanced-topic": "RL"
     },
-    "offByDefault": ["advanced-topic"]
+    "offByDefault": [
+      "advanced-topic"
+    ]
+  },
+  "tutor": {
+    "provider": "ollama",
+    "model": "qwen2.5",
+    "baseUrl": "http://127.0.0.1:11434"
   }
 }

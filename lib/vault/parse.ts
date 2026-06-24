@@ -35,10 +35,13 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** `<hubPrefix> [[Hub]]` → "Hub", or null. Prefix is config-driven (default "Patří k:"). */
-export function parseHub(md: string, hubPrefix: string): string | null {
-  const m = md.match(new RegExp(`${escapeRegExp(hubPrefix)}\\s*\\[\\[([^\\]]+)\\]\\]`));
-  return m ? m[1].trim() : null;
+/** `<hubPrefix> [[Hub]]` → "Hub", or null. Prefix is config-driven; a list accepts aliases (any matches). */
+export function parseHub(md: string, hubPrefix: string | string[]): string | null {
+  for (const prefix of Array.isArray(hubPrefix) ? hubPrefix : [hubPrefix]) {
+    const m = md.match(new RegExp(`${escapeRegExp(prefix)}\\s*\\[\\[([^\\]]+)\\]\\]`));
+    if (m) return m[1].trim();
+  }
+  return null;
 }
 
 /** First concept definition line (`**term** (česky: …) — …`), markdown stripped, or null. */
@@ -50,13 +53,18 @@ export function parseGloss(md: string): string | null {
   return null;
 }
 
-/** The lines belonging to the section under a given heading (until the next heading), or null if absent. */
-function sectionBody(md: string, heading: string): string | null {
+/**
+ * The lines belonging to the section under a given heading (until the next heading), or null if absent.
+ * `heading` may be a single heading or a list of accepted aliases (the section matches ANY of them), so a
+ * vault can use English, Czech, emoji/no-emoji headings interchangeably.
+ */
+function sectionBody(md: string, heading: string | string[]): string | null {
+  const accepted = new Set(Array.isArray(heading) ? heading : [heading]);
   const lines = md.split(/\r?\n/);
   let start = -1;
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(/^#{1,6}\s+(.*)$/);
-    if (m && m[1].trim() === heading) {
+    if (m && accepted.has(m[1].trim())) {
       start = i + 1;
       break;
     }
@@ -70,8 +78,8 @@ function sectionBody(md: string, heading: string): string | null {
   return out.join("\n");
 }
 
-/** Top-level bullets ("- …" / "* …") under a heading, skipping the italic template-helper bullet. */
-export function sectionItems(md: string, heading: string): string[] {
+/** Top-level bullets ("- …" / "* …") under a heading (or any of its aliases), skipping italic helpers. */
+export function sectionItems(md: string, heading: string | string[]): string[] {
   const body = sectionBody(md, heading);
   if (body === null) return [];
   return body

@@ -2,7 +2,7 @@
 // with computeProgress (C1), lays the concept graph out with the pure buildSkillMap (C2), and hands the
 // positioned map + a concept→cards index to the client renderer. force-dynamic because colours/locks
 // reflect the live review store. Vault stays READ-ONLY — this page only reads.
-import Link from "next/link";
+import { Network } from "lucide-react";
 import { readVault } from "@/lib/vault/reader";
 import { loadReviewStore } from "@/lib/srs/store";
 import { computeProgress } from "@/lib/progress/mastery";
@@ -12,7 +12,8 @@ import MapClient from "./MapClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function MapPage() {
+export default async function MapPage({ searchParams }: { searchParams: Promise<{ focus?: string }> }) {
+  const focus = (await searchParams).focus ?? null;
   const vault = await readVault();
   const store = await loadReviewStore();
   const { concepts } = computeProgress(vault.harvest, vault.learning, store);
@@ -29,21 +30,13 @@ export default async function MapPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
-      <header className="mb-6 flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">🗺️ Skill tree</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Every concept and how it connects — where you are vs. everything ahead.
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-4 text-sm text-zinc-500">
-          <Link href="/progress" className="underline hover:text-zinc-700 dark:hover:text-zinc-300">
-            Progress
-          </Link>
-          <Link href="/" className="underline hover:text-zinc-700 dark:hover:text-zinc-300">
-            Overview
-          </Link>
-        </div>
+      <header className="mb-6">
+        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
+          <Network className="h-6 w-6 text-violet-500" strokeWidth={2} /> Skill tree
+        </h1>
+        <p className="mt-1 text-sm text-zinc-500">
+          Every concept and how it connects — where you are vs. everything ahead.
+        </p>
       </header>
 
       <div className="mb-5 flex flex-wrap gap-x-5 gap-y-1 text-sm text-zinc-500">
@@ -67,7 +60,7 @@ export default async function MapPage() {
         </div>
       )}
 
-      <MapClient map={map} cardsByConcept={cardsByConcept} />
+      <MapClient map={map} cardsByConcept={cardsByConcept} initialFocus={focus} />
     </main>
   );
 }

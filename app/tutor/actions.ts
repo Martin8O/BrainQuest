@@ -7,7 +7,7 @@
 import { readVault } from "@/lib/vault/reader";
 import { computeProgress } from "@/lib/progress/mastery";
 import { loadReviewStore } from "@/lib/srs/store";
-import { gradeAnswer, OllamaOfflineError, ModelMissingError } from "@/lib/tutor/grade";
+import { gradeAnswer, OllamaOfflineError, ModelMissingError, TutorAuthError } from "@/lib/tutor/grade";
 import { getLadder } from "@/lib/tutor/variations";
 import { startRungForStrength } from "@/lib/tutor/variationPrompt";
 import { loadTutorConfig } from "@/lib/tutor/config";
@@ -22,13 +22,13 @@ export async function gradeRecallAnswer(
   shownQuestion?: string,
 ): Promise<GradeResponse> {
   const trimmed = answer.trim();
-  if (!trimmed) return { ok: false, code: "empty", error: "Napiš nejdřív odpověď." };
+  if (!trimmed) return { ok: false, code: "empty", error: "Write an answer first." };
 
   // Resolve the prompt server-side from its id, so the client never handles file paths.
   const vault = await readVault();
   const prompt = vault.harvest.recall.find((r) => r.id === promptId);
   if (!prompt) {
-    return { ok: false, code: "not-found", error: "Tuhle otázku se nepodařilo najít. Zkus jinou." };
+    return { ok: false, code: "not-found", error: "Couldn't find this question. Try another." };
   }
 
   try {
@@ -43,7 +43,7 @@ export async function gradeRecallAnswer(
       return {
         ok: false,
         code: "offline",
-        error: "Lokální AI (Ollama) neběží. Spusť ji příkazem `ollama serve` a zkus to znovu.",
+        error: "The local AI (Ollama) isn't running. Start it with `ollama serve` and try again.",
       };
     }
     if (err instanceof ModelMissingError) {
@@ -51,13 +51,20 @@ export async function gradeRecallAnswer(
       return {
         ok: false,
         code: "model",
-        error: `Model „${model}" není stažený. Spusť \`ollama pull ${model}\` a zkus to znovu.`,
+        error: `Model “${model}” isn't pulled. Run \`ollama pull ${model}\` and try again.`,
+      };
+    }
+    if (err instanceof TutorAuthError) {
+      return {
+        ok: false,
+        code: "api",
+        error: "The paid tutor's API key is missing or invalid. Add `TUTOR_API_KEY` to `local/.env`.",
       };
     }
     return {
       ok: false,
       code: "api",
-      error: err instanceof Error ? `Hodnocení selhalo: ${err.message}` : "Hodnocení selhalo.",
+      error: err instanceof Error ? `Grading failed: ${err.message}` : "Grading failed.",
     };
   }
 }
@@ -73,7 +80,7 @@ export async function getVariations(promptId: string): Promise<VariationResponse
   const vault = await readVault();
   const prompt = vault.harvest.recall.find((r) => r.id === promptId);
   if (!prompt) {
-    return { ok: false, code: "not-found", error: "Tuhle otázku se nepodařilo najít. Zkus jinou.", baseQuestion: null };
+    return { ok: false, code: "not-found", error: "Couldn't find this question. Try another.", baseQuestion: null };
   }
 
   // Calibrate the entry rung from how well the learner knows this prompt's source note (C1 cluster mastery).
@@ -98,7 +105,7 @@ export async function getVariations(promptId: string): Promise<VariationResponse
       return {
         ok: false,
         code: "offline",
-        error: "Lokální AI (Ollama) neběží — ukazuju původní otázku. Spusť `ollama serve` pro varianty.",
+        error: "The local AI (Ollama) isn't running — showing the original question. Start `ollama serve` for variations.",
         baseQuestion: prompt.question,
       };
     }
@@ -107,14 +114,22 @@ export async function getVariations(promptId: string): Promise<VariationResponse
       return {
         ok: false,
         code: "model",
-        error: `Model „${model}" není stažený — ukazuju původní otázku. Spusť \`ollama pull ${model}\`.`,
+        error: `Model “${model}” isn't pulled — showing the original question. Run \`ollama pull ${model}\`.`,
+        baseQuestion: prompt.question,
+      };
+    }
+    if (err instanceof TutorAuthError) {
+      return {
+        ok: false,
+        code: "api",
+        error: "Missing paid-tutor API key (`TUTOR_API_KEY` in `local/.env`) — showing the original question.",
         baseQuestion: prompt.question,
       };
     }
     return {
       ok: false,
       code: "api",
-      error: "Varianty se nepodařilo vytvořit — ukazuju původní otázku.",
+      error: "Couldn't generate variations — showing the original question.",
       baseQuestion: prompt.question,
     };
   }
