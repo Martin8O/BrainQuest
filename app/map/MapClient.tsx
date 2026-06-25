@@ -30,7 +30,9 @@ const hue = (id: number) => REGION_HUES[((id % REGION_HUES.length) + REGION_HUES
 const MUTED_HUE = "#71717a"; // the "Unlinked" catch-all region (no topic)
 
 const MIN_SCALE = 0.4;
-const MAX_SCALE = 4;
+// Deep enough that, combined with constant-size labels (which don't grow with zoom), dense topic
+// clusters genuinely spread apart instead of just scaling up together.
+const MAX_SCALE = 7;
 const clampScale = (s: number) => Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
 
 const pct = (x: number) => Math.round(x * 100);
@@ -214,10 +216,14 @@ export default function MapClient({
                 key={nd.concept}
                 node={nd}
                 r={nd.r}
+                scale={view.scale}
                 selected={nd.concept === selected}
                 related={neighbours.has(nd.concept)}
                 dim={dim && nd.concept !== selected && !neighbours.has(nd.concept)}
-                showLabel={showLabels || hovered === nd.concept || nd.concept === selected || neighbours.has(nd.concept)}
+                // (D) Once something is selected, the global "Labels" toggle is suppressed for the rest —
+                // only the selected node, its neighbours, and a hovered node keep their label, so the
+                // picked term stays readable instead of being drowned out by every other label.
+                showLabel={(showLabels && !dim) || hovered === nd.concept || nd.concept === selected || neighbours.has(nd.concept)}
                 onSelect={() => setSelected(nd.concept)}
                 onHover={setHovered}
               />
@@ -261,6 +267,7 @@ function ToolBtn({ children, onClick, label }: { children: React.ReactNode; onCl
 function NodeDot({
   node,
   r,
+  scale,
   selected,
   related,
   dim,
@@ -270,6 +277,8 @@ function NodeDot({
 }: {
   node: MapNode;
   r: number;
+  /** Current view zoom — used to counter-scale the label so it stays a constant on-screen size. */
+  scale: number;
   selected: boolean;
   related: boolean;
   dim: boolean;
@@ -302,19 +311,23 @@ function NodeDot({
         strokeWidth={1.5}
       />
       {showLabel && (
-        <text
-          x={r + 4}
-          y={3}
-          fontSize={selected ? 13 : 11}
-          fontWeight={selected ? 700 : 500}
-          fill="currentColor"
-          stroke="var(--background)"
-          strokeWidth={3}
-          paintOrder="stroke"
-          style={{ pointerEvents: "none" }}
-        >
-          {node.concept}
-        </text>
+        // (A) Counter-scale the label by 1/scale so it keeps a fixed on-screen size at any zoom. The
+        // anchor (r·scale + 4) sits just past the node's drawn edge in this un-scaled space, so zooming
+        // in spreads the labels apart (the gaps grow) instead of magnifying the text along with the map.
+        <g transform={`scale(${1 / scale})`} style={{ pointerEvents: "none" }}>
+          <text
+            x={r * scale + 4}
+            y={3}
+            fontSize={selected ? 13 : 11}
+            fontWeight={selected ? 700 : 500}
+            fill="currentColor"
+            stroke="var(--background)"
+            strokeWidth={3}
+            paintOrder="stroke"
+          >
+            {node.concept}
+          </text>
+        </g>
       )}
     </g>
   );
