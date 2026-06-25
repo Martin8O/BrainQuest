@@ -31,6 +31,9 @@ __pycache__/
 .env.*
 !.env.example
 
+# ── Retired one-off verify/debug scripts (kept local, never synced) ─────────
+scripts/
+
 # ── Deploy / misc ──────────────────────────────────────────────────────────
 .vercel
 .DS_Store
