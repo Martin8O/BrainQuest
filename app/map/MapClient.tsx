@@ -288,6 +288,12 @@ function NodeDot({
 }) {
   const color = LEVEL[node.level].fill;
   const opacity = dim ? 0.22 : 1;
+  // Labels stay a constant on-screen size up to a deep zoom (so clusters spread without the text
+  // ballooning), then grow a little at the deepest few zoom steps so they're comfortably legible —
+  // nodes are far enough apart that far in to fit the bigger text without re-crowding.
+  const DEEP_ZOOM = 3.5;
+  const labelBoost = scale <= DEEP_ZOOM ? 1 : 1 + (scale - DEEP_ZOOM) * 0.13; // 1× ≤3.5 → ~1.45× at 7
+  const fontPx = (selected ? 13 : 11) * labelBoost;
   return (
     <g
       transform={`translate(${node.x} ${node.y})`}
@@ -318,7 +324,7 @@ function NodeDot({
           <text
             x={r * scale + 4}
             y={3}
-            fontSize={selected ? 13 : 11}
+            fontSize={fontPx}
             fontWeight={selected ? 700 : 500}
             fill="currentColor"
             stroke="var(--background)"
