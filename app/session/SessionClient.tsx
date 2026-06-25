@@ -374,19 +374,23 @@ function ConceptBlock({
         <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
           <Link2 className="h-4 w-4" /> {concept.title}
         </span>
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-2 text-xs">
           <Link
             href={`/map?focus=${encodeURIComponent(concept.title)}`}
-            className="inline-flex items-center gap-1 text-zinc-500 transition hover:text-indigo-600 dark:hover:text-indigo-400"
+            className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-3 py-1.5 font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-200 dark:bg-indigo-900/60 dark:text-indigo-200 dark:hover:bg-indigo-900"
           >
-            <Network className="h-3.5 w-3.5" /> Skill tree
+            <Network className="h-4 w-4 text-indigo-500 dark:text-indigo-400" /> Skill tree
           </Link>
           <button
             onClick={onExplain}
             disabled={explain.loading}
-            className="inline-flex items-center gap-1 text-zinc-500 transition hover:text-indigo-600 disabled:opacity-50 dark:hover:text-indigo-400"
+            className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 font-semibold text-amber-700 shadow-sm transition hover:bg-amber-200 disabled:opacity-50 dark:bg-amber-900/50 dark:text-amber-200 dark:hover:bg-amber-900"
           >
-            {explain.loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            {explain.loading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-amber-500 dark:text-amber-400" />
+            ) : (
+              <Sparkles className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+            )}
             Explain more
           </button>
         </div>
