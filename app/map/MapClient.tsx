@@ -171,25 +171,18 @@ export default function MapClient({
           onPointerLeave={onPointerUp}
         >
           <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
-            {/* Topic territories (faint regions behind everything) */}
+            {/* Topic territories — faint background circles only; their headings are drawn in the label
+                layer below, so a node dot can never paint over a region title. */}
             {map.regions.map((rg) => (
-              <g key={rg.id} style={{ pointerEvents: "none" }}>
-                <circle cx={rg.x} cy={rg.y} r={rg.r} fill={rg.muted ? MUTED_HUE : hue(rg.id)} opacity={0.08} />
-                <text
-                  x={rg.x}
-                  y={rg.y - rg.r + 18}
-                  textAnchor="middle"
-                  fontSize={14}
-                  fontWeight={700}
-                  fill={rg.muted ? MUTED_HUE : hue(rg.id)}
-                  opacity={dim ? 0.3 : rg.muted ? 0.6 : 0.85}
-                  stroke="var(--background)"
-                  strokeWidth={3}
-                  paintOrder="stroke"
-                >
-                  {rg.label}
-                </text>
-              </g>
+              <circle
+                key={rg.id}
+                cx={rg.x}
+                cy={rg.y}
+                r={rg.r}
+                fill={rg.muted ? MUTED_HUE : hue(rg.id)}
+                opacity={0.08}
+                style={{ pointerEvents: "none" }}
+              />
             ))}
 
             {/* Edges */}
@@ -210,24 +203,55 @@ export default function MapClient({
               );
             })}
 
-            {/* Nodes */}
+            {/* Node dots (no text here — labels are a separate layer on top, so no dot covers a label) */}
             {map.nodes.map((nd) => (
               <NodeDot
                 key={nd.concept}
                 node={nd}
                 r={nd.r}
-                scale={view.scale}
                 selected={nd.concept === selected}
                 related={neighbours.has(nd.concept)}
                 dim={dim && nd.concept !== selected && !neighbours.has(nd.concept)}
-                // (D) Once something is selected, the global "Labels" toggle is suppressed for the rest —
-                // only the selected node, its neighbours, and a hovered node keep their label, so the
-                // picked term stays readable instead of being drowned out by every other label.
-                showLabel={(showLabels && !dim) || hovered === nd.concept || nd.concept === selected || neighbours.has(nd.concept)}
                 onSelect={() => setSelected(nd.concept)}
                 onHover={setHovered}
               />
             ))}
+
+            {/* LABEL LAYER — drawn above every dot. Region headings first, then node labels on top. */}
+            {map.regions.map((rg) => (
+              <text
+                key={`rl-${rg.id}`}
+                x={rg.x}
+                y={rg.y - rg.r + 18}
+                textAnchor="middle"
+                fontSize={14}
+                fontWeight={700}
+                fill={rg.muted ? MUTED_HUE : hue(rg.id)}
+                opacity={dim ? 0.3 : rg.muted ? 0.6 : 0.85}
+                stroke="var(--background)"
+                strokeWidth={3}
+                paintOrder="stroke"
+                style={{ pointerEvents: "none" }}
+              >
+                {rg.label}
+              </text>
+            ))}
+            {map.nodes.map((nd) => {
+              // (D) With a selection active, the global "Labels" toggle is suppressed for unrelated nodes;
+              // only the selected node, its neighbours, and a hovered node keep their label.
+              const show =
+                (showLabels && !dim) || hovered === nd.concept || nd.concept === selected || neighbours.has(nd.concept);
+              if (!show) return null;
+              return (
+                <NodeLabel
+                  key={`nl-${nd.concept}`}
+                  node={nd}
+                  r={nd.r}
+                  scale={view.scale}
+                  selected={nd.concept === selected}
+                />
+              );
+            })}
           </g>
         </svg>
       </div>
@@ -267,33 +291,22 @@ function ToolBtn({ children, onClick, label }: { children: React.ReactNode; onCl
 function NodeDot({
   node,
   r,
-  scale,
   selected,
   related,
   dim,
-  showLabel,
   onSelect,
   onHover,
 }: {
   node: MapNode;
   r: number;
-  /** Current view zoom — used to counter-scale the label so it stays a constant on-screen size. */
-  scale: number;
   selected: boolean;
   related: boolean;
   dim: boolean;
-  showLabel: boolean;
   onSelect: () => void;
   onHover: (concept: string | null) => void;
 }) {
   const color = LEVEL[node.level].fill;
   const opacity = dim ? 0.22 : 1;
-  // Labels stay a constant on-screen size up to a deep zoom (so clusters spread without the text
-  // ballooning), then grow a little at the deepest few zoom steps so they're comfortably legible —
-  // nodes are far enough apart that far in to fit the bigger text without re-crowding.
-  const DEEP_ZOOM = 3.5;
-  const labelBoost = scale <= DEEP_ZOOM ? 1 : 1 + (scale - DEEP_ZOOM) * 0.13; // 1× ≤3.5 → ~1.45× at 7
-  const fontPx = (selected ? 13 : 11) * labelBoost;
   return (
     <g
       transform={`translate(${node.x} ${node.y})`}
@@ -316,25 +329,34 @@ function NodeDot({
         strokeOpacity={node.locked ? 0.6 : 1}
         strokeWidth={1.5}
       />
-      {showLabel && (
-        // (A) Counter-scale the label by 1/scale so it keeps a fixed on-screen size at any zoom. The
-        // anchor (r·scale + 4) sits just past the node's drawn edge in this un-scaled space, so zooming
-        // in spreads the labels apart (the gaps grow) instead of magnifying the text along with the map.
-        <g transform={`scale(${1 / scale})`} style={{ pointerEvents: "none" }}>
-          <text
-            x={r * scale + 4}
-            y={3}
-            fontSize={fontPx}
-            fontWeight={selected ? 700 : 500}
-            fill="currentColor"
-            stroke="var(--background)"
-            strokeWidth={3}
-            paintOrder="stroke"
-          >
-            {node.concept}
-          </text>
-        </g>
-      )}
+    </g>
+  );
+}
+
+/**
+ * A node's text label, rendered in the label layer ABOVE every dot (so no filled circle — orange or grey
+ * — can paint over a name). Non-interactive: clicks fall through to the dot beneath.
+ * (A) Counter-scaled by 1/scale so it keeps a fixed on-screen size while clusters spread on zoom; at the
+ * deepest zooms it grows a little (labelBoost) for legibility, where nodes are far enough apart to fit it.
+ */
+function NodeLabel({ node, r, scale, selected }: { node: MapNode; r: number; scale: number; selected: boolean }) {
+  const DEEP_ZOOM = 3.5;
+  const labelBoost = scale <= DEEP_ZOOM ? 1 : 1 + (scale - DEEP_ZOOM) * 0.13; // 1× ≤3.5 → ~1.45× at 7
+  const fontPx = (selected ? 13 : 11) * labelBoost;
+  return (
+    <g transform={`translate(${node.x} ${node.y}) scale(${1 / scale})`} style={{ pointerEvents: "none" }}>
+      <text
+        x={r * scale + 4}
+        y={3}
+        fontSize={fontPx}
+        fontWeight={selected ? 700 : 500}
+        fill="currentColor"
+        stroke="var(--background)"
+        strokeWidth={3}
+        paintOrder="stroke"
+      >
+        {node.concept}
+      </text>
     </g>
   );
 }
