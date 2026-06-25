@@ -286,13 +286,12 @@ export default function SessionClient({
                   <hr className="my-4 border-zinc-200 dark:border-zinc-800" />
                   <p className="whitespace-pre-line text-zinc-700 dark:text-zinc-300">{card!.back}</p>
 
-                  {card!.concept && (
-                    <ConceptBlock
-                      concept={card!.concept}
-                      explain={explain}
-                      onExplain={handleExplain}
-                    />
-                  )}
+                  <ConceptBlock
+                    concept={card!.concept}
+                    front={card!.front}
+                    explain={explain}
+                    onExplain={handleExplain}
+                  />
 
                   {card!.related.length > 0 && (
                     <NextChips related={card!.related} direction={direction} onPick={setDirection} />
@@ -358,25 +357,39 @@ export default function SessionClient({
   );
 }
 
-/** The concept this card belongs to: a fuller gloss, a jump into the skill tree, and on-demand AI detail. */
+/**
+ * The "go deeper" block under a revealed card. Both actions work for EVERY card: "Explain more" asks the
+ * LLM about the card's term (grounded in its source note — no concept needed), and "Skill tree" jumps to
+ * the card's concept node, or — when the card has no `→ [[concept]]` link — to the term itself (often a
+ * node too; an unknown focus just opens the map un-targeted). The concept title + gloss only show when linked.
+ */
 function ConceptBlock({
   concept,
+  front,
   explain,
   onExplain,
 }: {
-  concept: { title: string; gloss: string | null };
+  concept: { title: string; gloss: string | null } | null;
+  front: string;
   explain: Explain;
   onExplain: () => void;
 }) {
+  const focus = concept?.title ?? front;
   return (
     <div className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-900 dark:bg-indigo-950/40">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
-          <Link2 className="h-4 w-4" /> {concept.title}
-        </span>
+        {concept ? (
+          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+            <Link2 className="h-4 w-4" /> {concept.title}
+          </span>
+        ) : (
+          <span className="text-xs font-medium uppercase tracking-wide text-indigo-400 dark:text-indigo-500">
+            Go deeper
+          </span>
+        )}
         <div className="flex items-center gap-2 text-xs">
           <Link
-            href={`/map?focus=${encodeURIComponent(concept.title)}`}
+            href={`/map?focus=${encodeURIComponent(focus)}`}
             className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-3 py-1.5 font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-200 dark:bg-indigo-900/60 dark:text-indigo-200 dark:hover:bg-indigo-900"
           >
             <Network className="h-4 w-4 text-indigo-500 dark:text-indigo-400" /> Skill tree
@@ -395,7 +408,7 @@ function ConceptBlock({
           </button>
         </div>
       </div>
-      {concept.gloss && <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{concept.gloss}</p>}
+      {concept?.gloss && <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{concept.gloss}</p>}
       {explain.text && (
         <p className="mt-3 whitespace-pre-line border-t border-indigo-200/70 pt-3 text-sm text-zinc-700 dark:border-indigo-900 dark:text-zinc-300">
           {explain.text}
