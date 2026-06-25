@@ -20,6 +20,16 @@ export interface PreviewResult {
   conceptCount?: number;
 }
 
+/**
+ * Write vault.config.json atomically (temp file, then rename) so a crash mid-write can't truncate the
+ * load-bearing config — a corrupt one makes loadVaultConfig() throw on every page. Mirrors the stores.
+ */
+function writeConfigAtomic(file: string, raw: Record<string, unknown>): void {
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(raw, null, 2)}\n`, "utf8");
+  fs.renameSync(tmp, file);
+}
+
 /** Count markdown notes in a folder; null if the folder doesn't exist / can't be read. */
 function countMarkdown(dir: string): number | null {
   try {
@@ -84,7 +94,7 @@ export async function saveVaultPath(candidate: string): Promise<SaveResult> {
   const file = path.join(process.cwd(), "vault.config.json");
   const raw = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
   raw.vaultPath = v.resolved;
-  fs.writeFileSync(file, `${JSON.stringify(raw, null, 2)}\n`, "utf8");
+  writeConfigAtomic(file, raw);
 
   invalidateVaultConfig(); // so the next page read picks up the new path without a restart
   return { ...v, saved: v.resolved, envOverride: !!process.env.BRAINQUEST_VAULT_PATH };
@@ -110,7 +120,7 @@ export async function saveTutorSettings(s: TutorSettings): Promise<{ ok: boolean
   const file = path.join(process.cwd(), "vault.config.json");
   const raw = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
   raw.tutor = { provider: s.provider, model, baseUrl };
-  fs.writeFileSync(file, `${JSON.stringify(raw, null, 2)}\n`, "utf8");
+  writeConfigAtomic(file, raw);
 
   invalidateVaultConfig();
   invalidateTutorConfig();

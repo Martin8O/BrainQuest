@@ -2,7 +2,7 @@
 // verify script can assert the exact text we send and the calibration math without a network call.
 // variations.ts wires this to the Ollama transport; the ladder rungs and the start-rung calibration are
 // the contract the UI renders against.
-import { MAX_NOTE_CHARS } from "./prompt";
+import { MAX_NOTE_CHARS, clamp } from "./prompt";
 
 /**
  * The difficulty ladder: four rungs of ascending cognitive demand (a Bloom-style progression), each a
@@ -106,14 +106,13 @@ export const VARIATION_SYSTEM_PROMPT = [
 
 /** Build the user turn: the original question, the grounding note, and the per-rung framing — fenced. */
 export function buildVariationPrompt(originalQuestion: string, noteText: string): string {
-  const note = noteText.length > MAX_NOTE_CHARS ? noteText.slice(0, MAX_NOTE_CHARS) + "\n…(zkráceno)" : noteText;
   return [
     "## Original recall question",
     originalQuestion,
     "",
     "## Source note (the only ground truth — every question must be answerable from this)",
     "<note>",
-    note,
+    clamp(noteText, MAX_NOTE_CHARS),
     "</note>",
     "",
     "## The four rungs to produce (ascending difficulty)",

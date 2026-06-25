@@ -4,6 +4,14 @@ import type { Verdict } from "./types";
 
 /** Keep the grounding note bounded so one giant note can't blow the token budget. */
 export const MAX_NOTE_CHARS = 8000;
+/** Bound the client-supplied question + answer too — a recall answer is short; this just caps abuse. */
+export const MAX_QUESTION_CHARS = 2000;
+export const MAX_ANSWER_CHARS = 4000;
+
+/** Clamp a string to a max length, appending a Czech "(zkráceno)" marker when it overflows. */
+export function clamp(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max) + "\n…(zkráceno)" : text;
+}
 
 /** The JSON Schema the model's answer is constrained to (structured outputs). */
 export const GRADE_SCHEMA = {
@@ -57,19 +65,18 @@ export const SYSTEM_PROMPT = [
 
 /** Build the user turn: the question, the grounding note, and the learner's answer — clearly fenced. */
 export function buildUserPrompt(question: string, noteText: string, answer: string): string {
-  const note = noteText.length > MAX_NOTE_CHARS ? noteText.slice(0, MAX_NOTE_CHARS) + "\n…(zkráceno)" : noteText;
   return [
     "## Recall question",
-    question,
+    clamp(question, MAX_QUESTION_CHARS),
     "",
     "## Source note (the only ground truth — base your feedback on this)",
     "<note>",
-    note,
+    clamp(noteText, MAX_NOTE_CHARS),
     "</note>",
     "",
     "## The learner's answer",
     "<answer>",
-    answer,
+    clamp(answer, MAX_ANSWER_CHARS),
     "</answer>",
     "",
     "Grade the answer against the note and return the structured result.",
