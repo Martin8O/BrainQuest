@@ -315,7 +315,7 @@ function LadderBar({
             <button
               key={v.level}
               onClick={() => onPick(v.level)}
-              title={`${v.level}. ${v.label} (${v.bloom})`}
+              title={v.label.toLowerCase() === v.bloom ? `${v.level}. ${v.label}` : `${v.level}. ${v.label} (${v.bloom})`}
               className={[
                 "rounded-full px-2.5 py-1 text-xs font-medium transition",
                 selected

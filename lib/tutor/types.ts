@@ -36,7 +36,7 @@ export interface GradeInput {
 export interface Variation {
   /** 1..4 — the difficulty rung (1 = recall … 4 = analyze). */
   level: number;
-  /** Learner-facing Czech difficulty label ("Připomenutí" … "Propojení"). */
+  /** Learner-facing difficulty label, English UI ("Recall" … "Analyze"). */
   label: string;
   /** The Bloom band in English (vocabulary the learner is building). */
   bloom: string;

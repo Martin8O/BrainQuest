@@ -12,6 +12,7 @@ import {
   VARIATION_SCHEMA,
   VARIATION_SYSTEM_PROMPT,
   buildVariationPrompt,
+  rungAt,
 } from "./variationPrompt";
 import {
   getCachedVariations,
@@ -40,6 +41,18 @@ function toVariations(raw: unknown, fallbackQuestion: string): Variation[] {
   });
 }
 
+/**
+ * Re-stamp each rung's label + bloom from the code's ladder (RUNGS), keyed by level. label/bloom are
+ * DERIVED from the rung, not the model — so a cached entry generated before the labels changed (e.g. the
+ * old Czech labels) can never resurface stale text. Only the `question` is ever trusted from the cache.
+ */
+function withCurrentLabels(variations: Variation[]): Variation[] {
+  return variations.map((v) => {
+    const rung = rungAt(v.level);
+    return { ...v, label: rung.label, bloom: rung.bloom };
+  });
+}
+
 /** Result of asking for a ladder — `cached` tells the caller (and UI) whether generation actually ran. */
 export interface GeneratedLadder {
   variations: Variation[];
@@ -62,7 +75,7 @@ export async function getLadder(args: {
 
   const cache = await loadVariationCache();
   const hit = getCachedVariations(cache, args.promptId, noteHash, model);
-  if (hit) return { variations: hit, cached: true };
+  if (hit) return { variations: withCurrentLabels(hit), cached: true };
 
   const raw = await callTutorJson({
     system: VARIATION_SYSTEM_PROMPT,

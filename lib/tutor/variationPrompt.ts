@@ -8,12 +8,12 @@ import { MAX_NOTE_CHARS, clamp } from "./prompt";
  * The difficulty ladder: four rungs of ascending cognitive demand (a Bloom-style progression), each a
  * FRESH rephrasing of the same recall prompt that must still be answerable from the SAME note. The
  * learner climbs easy → hard; how high they START is set by their mastery (see startRungForStrength).
- * Order is the contract: index i ↔ level i+1. CZ labels are learner-facing; `guidance` steers the model.
+ * Order is the contract: index i ↔ level i+1. Labels are learner-facing (English UI); `guidance` steers the model.
  */
 export interface Rung {
   /** 1..4 — the rung's position on the ladder (also the difficulty). */
   level: number;
-  /** Learner-facing Czech label shown as the difficulty chip. */
+  /** Learner-facing label shown as the difficulty chip (English UI; the questions themselves are localized). */
   label: string;
   /** The Bloom band in English (vocabulary the learner is building). */
   bloom: string;
@@ -24,25 +24,25 @@ export interface Rung {
 export const RUNGS: readonly Rung[] = [
   {
     level: 1,
-    label: "Připomenutí",
+    label: "Recall",
     bloom: "recall",
     guidance: "Holé vybavení: nech pojem pojmenovat nebo definovat. Krátká přímá otázka typu 'Co je…?' nebo 'Jak se jmenuje…?'.",
   },
   {
     level: 2,
-    label: "Porozumění",
+    label: "Understand",
     bloom: "understand",
     guidance: "Nech vysvětlit vlastními slovy PROČ nebo JAK to funguje — ne jen co to je. Otázka typu 'Proč…?' nebo 'Jak souvisí…?'.",
   },
   {
     level: 3,
-    label: "Použití",
+    label: "Apply",
     bloom: "apply",
     guidance: "Dej konkrétní situaci nebo scénář a zeptej se, jak by se pojem použil nebo co by se stalo (typu 'Co by se stalo, kdyby…?').",
   },
   {
     level: 4,
-    label: "Propojení",
+    label: "Analyze",
     bloom: "analyze",
     guidance: "Nech propojit, porovnat nebo zvážit kompromis mezi dvěma myšlenkami Z TÉ POZNÁMKY (vztah, důsledek, trade-off).",
   },
