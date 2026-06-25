@@ -7,10 +7,29 @@ Built as a learning project by Martin (a learner learning toward an AI/tech care
 coding agent. It reads a cross-project "second brain" vault **read-only** and turns its dated learning notes
 and atomic concept notes into scheduled flashcards, recall prompts, and a visual mastery map.
 
-> Status: **feature-complete through Phase F1; one hardening pass (E3) parked.** Live: the vault reader, harvested
-> cards + concept graph, an **FSRS** spaced-repetition scheduler, a daily session, a mastery model, a visual
+> Status: **feature-complete, hardened (Phase A → F1 + the E3 security/robustness pass).** Live: the vault reader,
+> harvested cards + concept graph, an **FSRS** spaced-repetition scheduler, a daily session, a mastery model, a visual
 > skill tree, gamification, and the LLM tutor. Build plan + design live in `docs/` and the private
 > `local/` working area.
+
+## Screenshots
+
+> **A note on language.** The whole **interface is in English**. The *content* you see inside the cards, notes, and
+> tutor answers is harvested from the author's own Obsidian vault, which is written in **Czech** — so concept glosses,
+> note titles, and the tutor's feedback appear in Czech. That's the author's study material, not a UI setting: point
+> BrainQuest at an English vault and those parts are English too. The AI tutor also deliberately answers in the
+> learner's own language to help them build the vocabulary. Each caption below translates the key Czech parts.
+
+| | |
+|---|---|
+| **Home** — vault harvested into cards, recall prompts, and a concept graph, with your level, XP, and streak. | ![Home](docs/screenshots/01-home.jpg) |
+| **Daily session** — flip a card, recall it, grade yourself (Again / Hard / Good / Easy); each card links out to the skill tree, an AI "Explain more", the full note, or the tutor. *(Card shown: "documentation drift" — its Czech gloss reads "docs drift away from the code over time; a quiet source of mistakes because they still look trustworthy.")* | ![Daily session](docs/screenshots/02-daily-session.jpg) |
+| **AI tutor** — answer a recall question in your own words; a local (or hosted) LLM grades it against your note and shows what you missed. The difficulty rungs are a recall → understand → apply → analyze ladder. *(Question shown: "Co je hydration mismatch?" = "What is a hydration mismatch?"; the grading feedback is in Czech.)* | ![AI tutor](docs/screenshots/03-ai-tutor.jpg) |
+| **Progress** — overall mastery (mature / learning / new), plus every concept bucketed by how well you know it. | ![Progress](docs/screenshots/04-progress.jpg) |
+| **Progress by topic** — a per-note bar (% known · cards seen). *(The note titles are Czech — they're the author's learning notes, e.g. "F1 — FSRS plánovač opakování" = "F1 — the FSRS review scheduler".)* | ![Progress by topic](docs/screenshots/05-progress-by-topic.jpg) |
+| **Skill tree** — every concept as a node, clustered into colour-coded topics; hollow = locked, solid = reachable, and dots turn green as you master them. | ![Skill tree](docs/screenshots/06-skill-tree.jpg) |
+| **Skill tree (labels on)** — the same map with concept labels shown. | ![Skill tree with labels](docs/screenshots/07-skill-tree-labels.jpg) |
+| **Settings** — point BrainQuest at a different vault (read-only), and choose the AI tutor backend: free local Ollama, or a paid Anthropic / OpenAI-compatible API. | ![Settings](docs/screenshots/08-settings.jpg) |
 
 ## What's inside
 - **Skill tree + progress** — see how much you already know vs. everything still ahead (which grows as the
