@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" width="1280" height="420" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b0d13"/>
+      <stop offset="1" stop-color="#0e1119"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#6d5ae6" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#6d5ae6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b7cf6"/>
+      <stop offset="0.55" stop-color="#6d5ae6"/>
+      <stop offset="1" stop-color="#5a46d6"/>
+    </linearGradient>
+    <linearGradient id="tileEdge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#5a46d6" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- backdrop -->
+  <rect width="1280" height="420" fill="url(#bg)"/>
+  <ellipse cx="270" cy="190" rx="520" ry="420" fill="url(#glow)"/>
+
+  <!-- faint stars (app's dark backdrop) -->
+  <g fill="#ffffff">
+    <circle cx="640" cy="56" r="1.6" opacity="0.5"/>
+    <circle cx="780" cy="92" r="1.1" opacity="0.35"/>
+    <circle cx="900" cy="48" r="1.8" opacity="0.45"/>
+    <circle cx="1040" cy="78" r="1.2" opacity="0.3"/>
+    <circle cx="1150" cy="120" r="1.6" opacity="0.45"/>
+    <circle cx="1210" cy="60" r="1" opacity="0.3"/>
+    <circle cx="980" cy="150" r="1.1" opacity="0.3"/>
+    <circle cx="1120" cy="300" r="1.5" opacity="0.35"/>
+    <circle cx="1015" cy="350" r="1.1" opacity="0.28"/>
+    <circle cx="700" cy="360" r="1.3" opacity="0.3"/>
+    <circle cx="560" cy="92" r="1.1" opacity="0.3"/>
+    <circle cx="1235" cy="220" r="1.2" opacity="0.3"/>
+  </g>
+
+  <!-- ===== App tile (left) ===== -->
+  <g filter="url(#soft)">
+    <rect x="92" y="96" width="228" height="228" rx="52" fill="url(#tile)"/>
+    <rect x="92" y="96" width="228" height="228" rx="52" fill="url(#tileEdge)"/>
+  </g>
+
+  <!-- skill-tree network inside the tile: hollow ring = locked, solid = unlocked -->
+  <g stroke="#ffffff" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round">
+    <line x1="206" y1="210" x2="160" y2="158"/>
+    <line x1="206" y1="210" x2="258" y2="166"/>
+    <line x1="206" y1="210" x2="158" y2="262"/>
+    <line x1="206" y1="210" x2="250" y2="258"/>
+    <line x1="160" y1="158" x2="258" y2="166"/>
+  </g>
+  <g>
+    <circle cx="160" cy="158" r="14" fill="#ffffff"/>
+    <circle cx="258" cy="166" r="12" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-opacity="0.85"/>
+    <circle cx="206" cy="210" r="17" fill="#ffffff"/>
+    <circle cx="158" cy="262" r="12" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-opacity="0.85"/>
+    <circle cx="250" cy="258" r="14" fill="#ffffff"/>
+  </g>
+
+  <!-- mastered badge (green check), like the app's progress accent -->
+  <g>
+    <circle cx="300" cy="300" r="34" fill="#0e1119"/>
+    <circle cx="300" cy="300" r="26" fill="#22c55e"/>
+    <path d="M289 300 l8 8 l15 -16" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- ===== Wordmark (right) ===== -->
+  <text x="372" y="212" font-size="96" font-weight="800" fill="#f5f6fa" letter-spacing="-1">BrainQuest</text>
+  <text x="376" y="262" font-size="31" font-weight="500" fill="#8b93a7">Turn your Obsidian vault into a learning game.</text>
+
+  <!-- feature chips -->
+  <g font-size="20" font-weight="600">
+    <g>
+      <rect x="376" y="296" width="220" height="46" rx="23" fill="#161a24" stroke="#2a3142" stroke-width="1.5"/>
+      <circle cx="402" cy="319" r="5" fill="#f97316"/>
+      <text x="416" y="326" fill="#c4ccda">Spaced repetition</text>
+    </g>
+    <g>
+      <rect x="612" y="296" width="150" height="46" rx="23" fill="#161a24" stroke="#2a3142" stroke-width="1.5"/>
+      <circle cx="638" cy="319" r="5" fill="#818cf8"/>
+      <text x="652" y="326" fill="#c4ccda">Skill tree</text>
+    </g>
+    <g>
+      <rect x="778" y="296" width="140" height="46" rx="23" fill="#161a24" stroke="#2a3142" stroke-width="1.5"/>
+      <circle cx="804" cy="319" r="5" fill="#22c55e"/>
+      <text x="818" y="326" fill="#c4ccda">AI tutor</text>
+    </g>
+  </g>
+</svg>

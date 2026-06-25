@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/hero.svg" alt="BrainQuest — turn your Obsidian vault into a learning game" width="860">
+</p>
+
 # BrainQuest
 
 Turn an Obsidian knowledge vault into an active learning game — **spaced repetition + a skill-tree of
