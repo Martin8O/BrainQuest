@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // `local/` is the gitignored private ops brain (CLAUDE.md §10) — never shipped, never linted.
+    "local/**",
   ]),
 ]);
 

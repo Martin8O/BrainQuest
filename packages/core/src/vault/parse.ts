@@ -1,6 +1,8 @@
 // Pure markdown parsing + harvesting for vault notes — NO file-system access, so it stays
-// unit-testable (E2). The vault uses inline #tags and a `Patří k: [[Hub]]` line, not YAML frontmatter.
+// unit-testable (E2). `vault` uses inline #tags and a `Patří k: [[Hub]]` line; the M1 compiler also
+// tolerates YAML frontmatter (see frontmatter.ts) as an alternative metadata source, merged additively.
 import type { VaultConfig } from "./config";
+import { frontmatterList, frontmatterScalar, splitFrontmatter } from "./frontmatter";
 import type { Card, ConceptEdge, ConceptNote, LearningNote, RecallPrompt } from "./types";
 
 /** First H1 ("# Title"), or null. */
@@ -127,28 +129,42 @@ export function parseRelatedBullet(line: string): { to: string; reason: string |
   return { to, reason: after.length > 0 ? after : null };
 }
 
+/** Merge inline #tags with any frontmatter `tags`, preserving insertion order and de-duplicating. */
+function mergeTags(inline: string[], fmTags: string[]): string[] {
+  return [...new Set([...inline, ...fmTags])];
+}
+
+/** Strip surrounding `[[…]]` from a value so a frontmatter `hub: "[[X]]"` matches an inline `X` hub. */
+function unwrapLink(s: string | null): string | null {
+  if (s == null) return null;
+  const m = s.match(/^\[\[([^\]]+)\]\]$/);
+  return m ? m[1].trim() : s;
+}
+
 /** Assemble a learning note (incl. its harvested cards + recall prompts) from its file contents. */
 export function parseLearningNote(slug: string, path: string, md: string, cfg: VaultConfig): LearningNote {
-  const tags = parseTags(md);
+  const { data, body } = splitFrontmatter(md);
+  const tags = mergeTags(parseTags(body), frontmatterList(data, "tags"));
   const cards: Card[] = [];
-  for (const line of sectionItems(md, cfg.harvest.cardsHeading)) {
+  for (const line of sectionItems(body, cfg.harvest.cardsHeading)) {
     const parsed = parseCardBullet(line);
     if (parsed) cards.push({ id: `${slug}#c${cards.length}`, sourceSlug: slug, sourcePath: path, ...parsed });
   }
-  const recall: RecallPrompt[] = sectionItems(md, cfg.harvest.recallHeading).map((line, i) => ({
+  const recall: RecallPrompt[] = sectionItems(body, cfg.harvest.recallHeading).map((line, i) => ({
     id: `${slug}#r${i}`,
     question: cleanItemText(line),
     sourceSlug: slug,
     sourcePath: path,
   }));
+  const fmHub = unwrapLink(frontmatterScalar(data, "hub") ?? frontmatterScalar(data, "belongs_to"));
   return {
     kind: "learning",
     slug,
     path,
-    title: parseTitle(md) ?? slug,
+    title: parseTitle(body) ?? frontmatterScalar(data, "title") ?? slug,
     tags,
-    date: parseDateFromSlug(slug),
-    hub: parseHub(md, cfg.tags.hubPrefix),
+    date: parseDateFromSlug(slug) ?? frontmatterScalar(data, "date"),
+    hub: parseHub(body, cfg.tags.hubPrefix) ?? fmHub,
     projects: tags.filter((t) => t.startsWith(cfg.tags.projectTagPrefix)),
     cards,
     recall,
@@ -157,9 +173,10 @@ export function parseLearningNote(slug: string, path: string, md: string, cfg: V
 
 /** Assemble a concept note (incl. its outgoing graph edges) from its file contents. */
 export function parseConceptNote(slug: string, path: string, md: string, cfg: VaultConfig): ConceptNote {
-  const title = parseTitle(md) ?? slug;
+  const { data, body } = splitFrontmatter(md);
+  const title = parseTitle(body) ?? frontmatterScalar(data, "title") ?? slug;
   const edges: ConceptEdge[] = [];
-  for (const line of sectionItems(md, cfg.harvest.relatedHeading)) {
+  for (const line of sectionItems(body, cfg.harvest.relatedHeading)) {
     const parsed = parseRelatedBullet(line);
     if (parsed) edges.push({ from: title, to: parsed.to, reason: parsed.reason });
   }
@@ -168,8 +185,72 @@ export function parseConceptNote(slug: string, path: string, md: string, cfg: Va
     slug,
     path,
     title,
-    tags: parseTags(md),
-    gloss: parseGloss(md),
+    tags: mergeTags(parseTags(body), frontmatterList(data, "tags")),
+    gloss: parseGloss(body),
     edges,
   };
+}
+
+/**
+ * Classify a standalone markdown note as a learning note or a concept note by its content: a note that
+ * harvests any card or recall prompt is "learning", otherwise "concept". Used by the compiler's folder/doc
+ * input modes, where notes aren't already sorted into learning/ and concepts/ folders.
+ */
+export function classifyNote(md: string, cfg: VaultConfig): "learning" | "concept" {
+  const { body } = splitFrontmatter(md);
+  const hasCards = sectionItems(body, cfg.harvest.cardsHeading).some((l) => parseCardBullet(l) !== null);
+  const hasRecall = sectionItems(body, cfg.harvest.recallHeading).length > 0;
+  return hasCards || hasRecall ? "learning" : "concept";
+}
+
+/** Filename-safe slug from a title: lowercased, spaces → "-", non-alphanumerics dropped. */
+export function slugify(title: string): string {
+  return title
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/** One note carved out of a single multi-note document (doc input mode). */
+export interface DocSection {
+  title: string;
+  slug: string;
+  /** The section's markdown, starting at its `# Title` line so the note parsers see a normal note. */
+  body: string;
+}
+
+/**
+ * Split one long structured document into notes on its H1 (`# `) headings — each H1 section becomes a note
+ * (title = the heading, body = everything until the next H1). Content before the first H1 is ignored.
+ * Lets the compiler turn a single authored/AI-generated doc into a pack (masterplan pillar 2).
+ */
+export function splitDocIntoNotes(md: string): DocSection[] {
+  const { body } = splitFrontmatter(md);
+  const lines = body.split(/\r?\n/);
+  const raw: { title: string; lines: string[] }[] = [];
+  let current: { title: string; lines: string[] } | null = null;
+  for (const line of lines) {
+    const h1 = line.match(/^#\s+(.+?)\s*$/);
+    if (h1) {
+      if (current) raw.push(current);
+      current = { title: h1[1].trim(), lines: [line] };
+    } else if (current) {
+      current.lines.push(line);
+    }
+  }
+  if (current) raw.push(current);
+
+  // Slugs must be unique — they key card ids (`slug#cN`) and pack paths. Two H1s that slugify to the same
+  // value (or to nothing, e.g. an emoji-only title) get a numeric suffix / a positional fallback.
+  const used = new Map<string, number>();
+  return raw.map((s, i) => {
+    const base = slugify(s.title) || `section-${i + 1}`;
+    const seen = used.get(base) ?? 0;
+    used.set(base, seen + 1);
+    const slug = seen === 0 ? base : `${base}-${seen + 1}`;
+    return { title: s.title, slug, body: s.lines.join("\n") };
+  });
 }

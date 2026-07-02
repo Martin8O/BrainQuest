@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import type { VaultConfig } from "./config";
 import {
+  classifyNote,
   parseCardBullet,
   parseConceptNote,
   parseDateFromSlug,
@@ -14,6 +15,8 @@ import {
   parseTags,
   parseTitle,
   sectionItems,
+  slugify,
+  splitDocIntoNotes,
 } from "./parse";
 
 const cfg: VaultConfig = {
@@ -178,5 +181,95 @@ describe("parseConceptNote — end to end", () => {
       { from: "Server action", to: "Next.js", reason: "kde se používá" },
       { from: "Server action", to: "server component", reason: null },
     ]);
+  });
+});
+
+describe("YAML frontmatter tolerance (M1)", () => {
+  const enCfg: VaultConfig = {
+    ...cfg,
+    harvest: { cardsHeading: "New concepts", recallHeading: "To review next", relatedHeading: "Related" },
+    tags: { hubPrefix: "Belongs to:", projectTagPrefix: "project/" },
+  };
+
+  it("reads tags, hub and date from frontmatter when the inline convention is absent", () => {
+    const md = [
+      "---",
+      "tags: [learning, project/demo]",
+      "hub: BrainQuest",
+      "date: 2026-05-01",
+      "---",
+      "# Frontmatter note",
+      "",
+      "## New concepts",
+      "- **thing** — a definition",
+    ].join("\n");
+    const note = parseLearningNote("no-date-slug", "/x.md", md, enCfg);
+    expect(note.tags).toEqual(["learning", "project/demo"]);
+    expect(note.hub).toBe("BrainQuest");
+    expect(note.date).toBe("2026-05-01"); // slug has no date prefix → frontmatter fallback
+    expect(note.projects).toEqual(["project/demo"]);
+    expect(note.cards).toHaveLength(1);
+  });
+
+  it("unwraps a bracketed frontmatter hub and recovers a #-prefixed project tag", () => {
+    // Real shared-vault shape: `hub: "[[X]]"` (brackets) + `tags: [learning, "#project/x"]` (leading #).
+    const md = [
+      "---",
+      'tags: [learning, "#project/advanced-topic"]',
+      'hub: "[[RL All-in-One Dashboard]]"',
+      "---",
+      "# FM-only note",
+    ].join("\n");
+    const note = parseLearningNote("no-date", "/x.md", md, enCfg);
+    expect(note.hub).toBe("RL All-in-One Dashboard"); // brackets stripped → matches inline-hub spelling
+    expect(note.projects).toEqual(["project/advanced-topic"]); // # stripped → filter matches
+  });
+
+  it("keeps inline metadata winning, with frontmatter merged in", () => {
+    const md = [
+      "---",
+      "tags: [fromfm]",
+      "---",
+      "# Inline wins",
+      "#learning",
+      "Belongs to: [[InlineHub]]",
+    ].join("\n");
+    const note = parseLearningNote("2026-01-01-x", "/x.md", md, enCfg);
+    expect(note.hub).toBe("InlineHub"); // inline present → used over any frontmatter hub
+    expect(note.date).toBe("2026-01-01"); // slug date wins
+    expect(note.tags).toEqual(["learning", "fromfm"]); // union
+  });
+});
+
+describe("classifyNote", () => {
+  const enCfg: VaultConfig = {
+    ...cfg,
+    harvest: { cardsHeading: "New concepts", recallHeading: "To review next", relatedHeading: "Related" },
+  };
+  it("calls a note with cards or recall 'learning', otherwise 'concept'", () => {
+    expect(classifyNote("# N\n## New concepts\n- **t** — d", enCfg)).toBe("learning");
+    expect(classifyNote("# N\n## To review next\n- q?", enCfg)).toBe("learning");
+    expect(classifyNote("# Token\n**token** — a unit\n## Related\n- [[x]]", enCfg)).toBe("concept");
+  });
+});
+
+describe("slugify + splitDocIntoNotes", () => {
+  it("slugify makes a filename-safe slug", () => {
+    expect(slugify("Hello, World! (v2)")).toBe("hello-world-v2");
+    expect(slugify("  A__B  ")).toBe("a-b");
+  });
+
+  it("splits a doc into notes on H1 headings, ignoring a preamble", () => {
+    const doc = ["intro preamble", "# First", "body 1", "# Second", "body 2"].join("\n");
+    const sections = splitDocIntoNotes(doc);
+    expect(sections.map((s) => s.title)).toEqual(["First", "Second"]);
+    expect(sections.map((s) => s.slug)).toEqual(["first", "second"]);
+    expect(sections[0].body).toBe("# First\nbody 1");
+  });
+
+  it("keeps slugs unique when titles collide or slugify to nothing", () => {
+    const doc = ["# Setup", "a", "# Setup", "b", "# 🎯", "c"].join("\n");
+    // duplicate "Setup" → suffixed; emoji-only title → positional fallback (never an empty slug)
+    expect(splitDocIntoNotes(doc).map((s) => s.slug)).toEqual(["setup", "setup-2", "section-3"]);
   });
 });
