@@ -2,7 +2,7 @@
 // progress layer (C1), this layer COMPUTES, it never stores: positions + lock state are a pure function
 // of the concept graph (B1) + mastery (C1) + a fixed seed. Contracts live here so the layout module and
 // the client renderer read the same model.
-import type { MasteryLevel } from "@/lib/progress/types";
+import type { MasteryLevel } from "../progress/types";
 
 /** A concept placed on the 2-D canvas, with the mastery + lock state that drives how its node looks. */
 export interface MapNode {

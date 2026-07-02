@@ -4,14 +4,14 @@
 // a typed response so the UI can show a precise, actionable message.
 "use server";
 
-import { readVault } from "@/lib/vault/reader";
-import { computeProgress } from "@/lib/progress/mastery";
-import { loadReviewStore } from "@/lib/srs/store";
-import { gradeAnswer, OllamaOfflineError, ModelMissingError, TutorAuthError } from "@/lib/tutor/grade";
-import { getLadder } from "@/lib/tutor/variations";
-import { startRungForStrength } from "@/lib/tutor/variationPrompt";
-import { loadTutorConfig } from "@/lib/tutor/config";
-import type { GradeResponse, VariationResponse } from "@/lib/tutor/types";
+import { readVault } from "@brainquest/core/vault/reader";
+import { computeProgress } from "@brainquest/core/progress/mastery";
+import { loadReviewStore } from "@brainquest/core/srs/store";
+import { gradeAnswer, OllamaOfflineError, ModelMissingError, TutorAuthError } from "@brainquest/core/tutor/grade";
+import { getLadder } from "@brainquest/core/tutor/variations";
+import { startRungForStrength } from "@brainquest/core/tutor/variationPrompt";
+import { loadTutorConfig } from "@brainquest/core/tutor/config";
+import type { GradeResponse, VariationResponse } from "@brainquest/core/tutor/types";
 
 export async function gradeRecallAnswer(
   promptId: string,

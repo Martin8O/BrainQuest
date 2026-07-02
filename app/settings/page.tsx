@@ -5,8 +5,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Settings as SettingsIcon, FolderTree, ShieldCheck } from "lucide-react";
-import { loadVaultConfig } from "@/lib/vault/config";
-import { hasTutorApiKey } from "@/lib/tutor/config";
+import { loadVaultConfig } from "@brainquest/core/vault/config";
+import { hasTutorApiKey } from "@brainquest/core/tutor/config";
 import SettingsClient from "./SettingsClient";
 import TutorSettingsClient from "./TutorSettingsClient";
 

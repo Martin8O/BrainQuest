@@ -15,12 +15,12 @@ import {
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
-import { readVault } from "@/lib/vault/reader";
-import { loadVaultConfig, primaryHeading } from "@/lib/vault/config";
-import type { Card, ConceptNote, LearningNote } from "@/lib/vault/types";
-import { loadReviewStore } from "@/lib/srs/store";
-import { ensureStates, selectDue } from "@/lib/srs/scheduler";
-import { computeProgress, gamificationFor } from "@/lib/progress/mastery";
+import { readVault } from "@brainquest/core/vault/reader";
+import { loadVaultConfig, primaryHeading } from "@brainquest/core/vault/config";
+import type { Card, ConceptNote, LearningNote } from "@brainquest/core/vault/types";
+import { loadReviewStore } from "@brainquest/core/srs/store";
+import { ensureStates, selectDue } from "@brainquest/core/srs/scheduler";
+import { computeProgress, gamificationFor } from "@brainquest/core/progress/mastery";
 import { Hud } from "./components/Hud";
 
 // Read the vault fresh on every request — it grows as Martin learns, so never prerender.

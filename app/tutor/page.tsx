@@ -3,9 +3,9 @@
 // grading happens in a "use server" action → the configured LLM backend (local Ollama or a paid API).
 // force-dynamic because the vault grows as Martin learns. READ-ONLY: this page never writes the vault.
 import { GraduationCap } from "lucide-react";
-import { readVault } from "@/lib/vault/reader";
-import { loadVaultConfig, primaryHeading } from "@/lib/vault/config";
-import { areaForProjects } from "@/lib/tutor/area";
+import { readVault } from "@brainquest/core/vault/reader";
+import { loadVaultConfig, primaryHeading } from "@brainquest/core/vault/config";
+import { areaForProjects } from "@brainquest/core/tutor/area";
 import TutorClient from "./TutorClient";
 import type { TutorArea, TutorPrompt } from "./types";
 

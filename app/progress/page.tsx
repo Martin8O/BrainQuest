@@ -2,10 +2,10 @@
 // mastery picture with the pure computeProgress(), and renders it: overall, per-concept ("where am I
 // vs. everything ahead"), and per-cluster. force-dynamic because it reflects the live review store.
 import { TrendingUp } from "lucide-react";
-import { readVault } from "@/lib/vault/reader";
-import { loadReviewStore } from "@/lib/srs/store";
-import { computeProgress } from "@/lib/progress/mastery";
-import type { ClusterProgress, ConceptMastery, MasteryLevel } from "@/lib/progress/types";
+import { readVault } from "@brainquest/core/vault/reader";
+import { loadReviewStore } from "@brainquest/core/srs/store";
+import { computeProgress } from "@brainquest/core/progress/mastery";
+import type { ClusterProgress, ConceptMastery, MasteryLevel } from "@brainquest/core/progress/types";
 
 export const dynamic = "force-dynamic";
 

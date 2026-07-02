@@ -7,7 +7,7 @@
 // and NEVER stored in the committed config. For "ollama" there is no key and no outbound network.
 import fs from "node:fs";
 import path from "node:path";
-import { loadVaultConfig } from "@/lib/vault/config";
+import { loadVaultConfig } from "../vault/config";
 
 export type TutorProvider = "ollama" | "anthropic" | "openai";
 

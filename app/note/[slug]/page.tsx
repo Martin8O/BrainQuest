@@ -1,13 +1,12 @@
 // In-app note reader (server component). The daily session links here so a card is a doorway to its full
 // teaching note — the deep layer — without leaving BrainQuest. READ-ONLY: it reads the note file and
 // renders it; it never writes the vault. Handles both learning and concept notes by slug.
-import fs from "node:fs/promises";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, FileText } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { readVault } from "@/lib/vault/reader";
+import { readNoteBody, readVault } from "@brainquest/core/vault/reader";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +26,7 @@ export default async function NotePage({ params }: { params: Promise<{ slug: str
 
   let md = "";
   try {
-    md = await fs.readFile(note.path, "utf8");
+    md = await readNoteBody(note.path);
   } catch {
     notFound();
   }

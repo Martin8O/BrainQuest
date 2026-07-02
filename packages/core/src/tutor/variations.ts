@@ -3,7 +3,6 @@
 // miss asks the local model (via the shared Ollama transport) to produce the four rungs, constrained to
 // our schema. Imported only by the "use server" tutor action. Reproducible: the transport pins seed +
 // temperature, so the same note yields the same ladder — which is also why caching it is safe.
-import fs from "node:fs/promises";
 import { callTutorJson } from "./llm";
 import { loadTutorConfig } from "./config";
 import {
@@ -20,12 +19,8 @@ import {
   loadVariationCache,
   saveVariationCache,
 } from "./variationStore";
+import { readNoteBody } from "../vault/reader";
 import type { Variation } from "./types";
-
-/** Read a learning note from disk (read-only). Bubbles up if the path is gone. */
-async function readNote(sourcePath: string): Promise<string> {
-  return fs.readFile(sourcePath, "utf8");
-}
 
 /**
  * Validate the model's raw JSON (keys r1..r4) into the four ordered rungs. Each rung's label/bloom come
@@ -70,7 +65,7 @@ export async function getLadder(args: {
   sourcePath: string;
 }): Promise<GeneratedLadder> {
   const { model } = loadTutorConfig();
-  const noteText = await readNote(args.sourcePath);
+  const noteText = await readNoteBody(args.sourcePath);
   const noteHash = hashNote(noteText);
 
   const cache = await loadVariationCache();

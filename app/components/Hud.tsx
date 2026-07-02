@@ -2,7 +2,7 @@
 // computed GamificationState (lib/gamification) and renders it, no data access of its own, so it works
 // as a server component on the home page and is reused verbatim in the session "unlock" celebration.
 import { Flame } from "lucide-react";
-import type { GamificationState } from "@/lib/gamification/types";
+import type { GamificationState } from "@brainquest/core/gamification/types";
 
 /** A capped intensity 0..1 for an activity-strip bar, so one huge day doesn't flatten the rest. */
 function intensity(count: number): number {

@@ -2,18 +2,13 @@
 // never writes the vault) and asks the local model (via the shared Ollama transport) to grade the
 // learner's answer against it, constraining the reply to our JSON schema. No API key, no network beyond
 // localhost. Imported only by the "use server" tutor action.
-import fs from "node:fs/promises";
 import { callTutorJson, OllamaOfflineError, ModelMissingError, TutorAuthError } from "./llm";
 import { GRADE_SCHEMA, SYSTEM_PROMPT, buildUserPrompt, isVerdict } from "./prompt";
+import { readNoteBody } from "../vault/reader";
 import type { GradeResult } from "./types";
 
 // Re-export the transport errors so existing callers (the tutor action) keep importing them from here.
 export { OllamaOfflineError, ModelMissingError, TutorAuthError };
-
-/** Read a learning note from disk (read-only). Bubbles up if the path is gone. */
-async function readNote(sourcePath: string): Promise<string> {
-  return fs.readFile(sourcePath, "utf8");
-}
 
 /** Validate the model's JSON into a GradeResult, clamping score and defaulting arrays. */
 function toGradeResult(raw: unknown): GradeResult {
@@ -45,7 +40,7 @@ export async function gradeAnswer(args: {
   sourcePath: string;
   answer: string;
 }): Promise<GradeResult> {
-  const noteText = await readNote(args.sourcePath);
+  const noteText = await readNoteBody(args.sourcePath);
   const raw = await callTutorJson({
     system: SYSTEM_PROMPT,
     user: buildUserPrompt(args.question, noteText, args.answer),

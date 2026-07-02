@@ -20,10 +20,10 @@ import {
   Loader2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { schedule } from "@/lib/srs/scheduler";
-import { XP_PER_REVIEW } from "@/lib/gamification/engine";
-import type { Grade } from "@/lib/srs/types";
-import type { GamificationState } from "@/lib/gamification/types";
+import { schedule } from "@brainquest/core/srs/scheduler";
+import { XP_PER_REVIEW } from "@brainquest/core/gamification/engine";
+import type { Grade } from "@brainquest/core/srs/types";
+import type { GamificationState } from "@brainquest/core/gamification/types";
 import { Hud } from "../components/Hud";
 import { AreaFilter } from "../components/AreaFilter";
 import { gradeCard, getGamification, explainTerm } from "./actions";

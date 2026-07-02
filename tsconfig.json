@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@brainquest/core/*": ["./packages/core/src/*"]
     }
   },
   "include": [

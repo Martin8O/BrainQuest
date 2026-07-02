@@ -2,6 +2,9 @@
   "name": "brainquest",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "pack:build": "tsx tools/build-dev-pack.mts",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
@@ -29,6 +33,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "typescript": "^5",
     "vitest": "^4.1.9"
   }

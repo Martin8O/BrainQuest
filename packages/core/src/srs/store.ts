@@ -3,7 +3,7 @@
 // READ/WRITE FENCE: this touches only the repo's data/ dir — never the read-only vault vault.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { localDateKey } from "@/lib/gamification/engine";
+import { localDateKey } from "../gamification/engine";
 import { initDifficulty, initStability } from "./fsrs";
 import { newReviewState, schedule } from "./scheduler";
 import type { Grade, ReviewState, ReviewStore } from "./types";

@@ -2,7 +2,7 @@
 // every function is deterministic and testable, same discipline as the B2 scheduler and C1 mastery).
 // XP and level and streak are DERIVED from the review store's lifetime activity log + the mastered-
 // concept count; nothing here is stored that we couldn't recompute. Safe to import on the client.
-import type { ReviewStore } from "@/lib/srs/types";
+import type { ReviewStore } from "../srs/types";
 import type { DayActivity, GamificationState, LevelInfo, StreakInfo } from "./types";
 
 /** XP for grading one card — the steady drip that rewards just showing up. */

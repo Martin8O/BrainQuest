@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { localDateKey } from "@/lib/gamification/engine";
+import { localDateKey } from "../gamification/engine";
 import { emptyStore, loadReviewStore, recordReview, reviewsPath, saveReviewStore } from "./store";
 import { newReviewState } from "./scheduler";
 

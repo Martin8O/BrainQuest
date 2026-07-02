@@ -6,8 +6,8 @@
 // and the side panel shows that concept's cards + the notes they came from. No layout math runs here.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Lock } from "lucide-react";
-import type { MasteryLevel } from "@/lib/progress/types";
-import type { MapNode, PanelCard, SkillMap } from "@/lib/graph/types";
+import type { MasteryLevel } from "@brainquest/core/progress/types";
+import type { MapNode, PanelCard, SkillMap } from "@brainquest/core/graph/types";
 
 // A gradual progression that reads at a glance: grey → orange → yellow → green
 // (not started → learning → almost → mastered). Each adjacent pair is clearly distinct.

@@ -13,7 +13,7 @@ import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AreaFilter } from "../components/AreaFilter";
 import { gradeRecallAnswer, getVariations } from "./actions";
-import type { GradeResponse, GradeResult, Variation, VariationLadder, Verdict } from "@/lib/tutor/types";
+import type { GradeResponse, GradeResult, Variation, VariationLadder, Verdict } from "@brainquest/core/tutor/types";
 import type { TutorArea, TutorPrompt } from "./types";
 
 /** Per-verdict styling — the headline badge + score colour. */

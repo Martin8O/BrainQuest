@@ -3,13 +3,12 @@
 // the server — that's where node:fs (and recordReview) is allowed to live.
 "use server";
 
-import fs from "node:fs/promises";
-import { recordReview, loadReviewStore } from "@/lib/srs/store";
-import { readVault } from "@/lib/vault/reader";
-import { computeProgress, gamificationFor } from "@/lib/progress/mastery";
-import { callTutorJson, OllamaOfflineError, ModelMissingError, TutorAuthError } from "@/lib/tutor/llm";
-import type { Grade, ReviewState } from "@/lib/srs/types";
-import type { GamificationState } from "@/lib/gamification/types";
+import { recordReview, loadReviewStore } from "@brainquest/core/srs/store";
+import { readNoteBody, readVault } from "@brainquest/core/vault/reader";
+import { computeProgress, gamificationFor } from "@brainquest/core/progress/mastery";
+import { callTutorJson, OllamaOfflineError, ModelMissingError, TutorAuthError } from "@brainquest/core/tutor/llm";
+import type { Grade, ReviewState } from "@brainquest/core/srs/types";
+import type { GamificationState } from "@brainquest/core/gamification/types";
 
 /**
  * Record one review and return the updated SRS state.
@@ -53,9 +52,9 @@ export async function explainTerm(cardId: string): Promise<ExplainResponse> {
 
   let note = "";
   try {
-    note = await fs.readFile(card.sourcePath, "utf8");
+    note = await readNoteBody(card.sourcePath);
   } catch {
-    // The note may be gone; fall back to just the card's own gloss as context.
+    // The note may be gone (or absent from the pack); fall back to just the card's own gloss as context.
   }
 
   try {

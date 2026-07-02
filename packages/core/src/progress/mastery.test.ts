@@ -2,10 +2,10 @@
 // so a bug here silently mis-reports the learner's standing. The standout case is the case-insensitive
 // concept match — a real bug found during C1, kept here as a regression test so it can't come back.
 import { describe, expect, it } from "vitest";
-import type { Card, Harvest, LearningNote } from "@/lib/vault/types";
-import { emptyStore } from "@/lib/srs/store";
-import { newReviewState } from "@/lib/srs/scheduler";
-import type { ReviewState, ReviewStore } from "@/lib/srs/types";
+import type { Card, Harvest, LearningNote } from "../vault/types";
+import { emptyStore } from "../srs/store";
+import { newReviewState } from "../srs/scheduler";
+import type { ReviewState, ReviewStore } from "../srs/types";
 import { cardBucket, cardStrength, computeProgress } from "./mastery";
 
 const NOW = new Date("2026-06-23T08:00:00.000Z");

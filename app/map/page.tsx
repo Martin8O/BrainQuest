@@ -4,11 +4,11 @@
 // reflect the live review store. Vault stays READ-ONLY — this page only reads.
 import Link from "next/link";
 import { ArrowLeft, Network } from "lucide-react";
-import { readVault } from "@/lib/vault/reader";
-import { loadReviewStore } from "@/lib/srs/store";
-import { computeProgress } from "@/lib/progress/mastery";
-import { buildSkillMap } from "@/lib/graph/layout";
-import type { PanelCard } from "@/lib/graph/types";
+import { readVault } from "@brainquest/core/vault/reader";
+import { loadReviewStore } from "@brainquest/core/srs/store";
+import { computeProgress } from "@brainquest/core/progress/mastery";
+import { buildSkillMap } from "@brainquest/core/graph/layout";
+import type { PanelCard } from "@brainquest/core/graph/types";
 import MapClient from "./MapClient";
 
 export const dynamic = "force-dynamic";

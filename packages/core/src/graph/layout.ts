@@ -10,8 +10,8 @@
 //   4. concepts with no links yet become one small "Unlinked" island packed in with the rest.
 // Two invariants: deterministic (same graph + seed → identical map) and positions are MASTERY-
 // INDEPENDENT (the map never reshuffles as you study — only colours + locks change).
-import type { ConceptGraph } from "@/lib/vault/types";
-import type { ConceptMastery, MasteryLevel } from "@/lib/progress/types";
+import type { ConceptGraph } from "../vault/types";
+import type { ConceptMastery, MasteryLevel } from "../progress/types";
 import type { LayoutOptions, MapEdge, MapNode, MapRegion, SkillMap } from "./types";
 
 const DEFAULTS: LayoutOptions = { width: 1100, height: 760, padding: 44, iterations: 300, seed: 42, resolution: 1.1 };

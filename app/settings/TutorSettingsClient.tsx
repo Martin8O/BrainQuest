@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Cpu, Sparkles, Globe, CheckCircle2, AlertCircle, KeyRound, Save } from "lucide-react";
 import { saveTutorSettings, type TutorSettings } from "./actions";
-import type { TutorProvider } from "@/lib/tutor/config";
+import type { TutorProvider } from "@brainquest/core/tutor/config";
 
 const PROVIDERS: {
   id: TutorProvider;

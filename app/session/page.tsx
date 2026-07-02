@@ -2,12 +2,12 @@
 // (B1), load the review store (B2), figure out which cards are due now — then hands a plain list to
 // the client loop. force-dynamic because "due" depends on the current time and the live store.
 import { BookOpenCheck, CheckCircle2 } from "lucide-react";
-import { readVault } from "@/lib/vault/reader";
-import { loadReviewStore } from "@/lib/srs/store";
-import { ensureStates, selectDue } from "@/lib/srs/scheduler";
-import { computeProgress, gamificationFor } from "@/lib/progress/mastery";
-import { loadVaultConfig } from "@/lib/vault/config";
-import { areaForProjects } from "@/lib/tutor/area";
+import { readVault } from "@brainquest/core/vault/reader";
+import { loadReviewStore } from "@brainquest/core/srs/store";
+import { ensureStates, selectDue } from "@brainquest/core/srs/scheduler";
+import { computeProgress, gamificationFor } from "@brainquest/core/progress/mastery";
+import { loadVaultConfig } from "@brainquest/core/vault/config";
+import { areaForProjects } from "@brainquest/core/tutor/area";
 import { interleaveBySource } from "./order";
 import SessionClient from "./SessionClient";
 import type { SessionArea, SessionCard } from "./types";

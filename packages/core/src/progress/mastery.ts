@@ -2,10 +2,10 @@
 // have (B1 cards + graph, B2 review state); we never store what we can compute. That's the whole
 // point of C1: one function turns "what cards exist" + "how their reviews went" into "how much do I
 // know, per concept and overall". Deterministic → trivially testable (E2), same as the B2 scheduler.
-import type { Card, Harvest, LearningNote } from "@/lib/vault/types";
-import type { ReviewState, ReviewStore } from "@/lib/srs/types";
-import { computeGamification } from "@/lib/gamification/engine";
-import type { GamificationState } from "@/lib/gamification/types";
+import type { Card, Harvest, LearningNote } from "../vault/types";
+import type { ReviewState, ReviewStore } from "../srs/types";
+import { computeGamification } from "../gamification/engine";
+import type { GamificationState } from "../gamification/types";
 import type {
   BucketCounts,
   CardBucket,

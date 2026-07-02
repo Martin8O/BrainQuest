@@ -6,8 +6,8 @@
 // folders — and only ever WRITES vault.config.json (a fixed path); the vault itself stays read-only.
 import fs from "node:fs";
 import path from "node:path";
-import { loadVaultConfig, invalidateVaultConfig } from "@/lib/vault/config";
-import { invalidateTutorConfig, type TutorProvider } from "@/lib/tutor/config";
+import { loadVaultConfig, invalidateVaultConfig } from "@brainquest/core/vault/config";
+import { invalidateTutorConfig, type TutorProvider } from "@brainquest/core/tutor/config";
 
 export interface PreviewResult {
   ok: boolean;

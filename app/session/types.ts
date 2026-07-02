@@ -1,7 +1,7 @@
 // The shape the session page hands to the client component: a due card's content (from the B1
 // harvest) joined with its current SRS state (from B2). Contracts in one place — the server builds
 // it, the client renders it, both import this type.
-import type { ReviewState } from "@/lib/srs/types";
+import type { ReviewState } from "@brainquest/core/srs/types";
 
 /** One card queued for review in the daily session: harvested content + its scheduling state. */
 export interface SessionCard {

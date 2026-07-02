@@ -4,8 +4,8 @@
 // same seed ⇒ byte-identical coordinates (the map must not wander as you learn). We assert no specific
 // pixel coordinates (those are allowed to change), only these invariants.
 import { describe, expect, it } from "vitest";
-import type { ConceptGraph } from "@/lib/vault/types";
-import type { ConceptMastery, MasteryLevel } from "@/lib/progress/types";
+import type { ConceptGraph } from "../vault/types";
+import type { ConceptMastery, MasteryLevel } from "../progress/types";
 import { buildSkillMap } from "./layout";
 
 /** A ConceptMastery row at a chosen level (the layout only reads `level` for lock state). */

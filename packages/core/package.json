@@ -1,0 +1,11 @@
+{
+  "name": "@brainquest/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BrainQuest shared engine — vault/pack parsing, SRS/FSRS scheduling, mastery, graph layout, tutor prompts. Framework-neutral: no Next, no React. Consumed by the authoring app today and the mobile app (M3) tomorrow.",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "sideEffects": false
+}
