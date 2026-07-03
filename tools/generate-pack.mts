@@ -14,20 +14,27 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { loadVaultConfig } from "@brainquest/core/vault/config";
+import { slugify } from "@brainquest/core/vault/parse";
 import {
   DEFAULT_MODEL,
   type TutorConfig,
   type TutorProvider,
 } from "@brainquest/core/tutor/clientConfig";
-import { callTutorJson } from "@brainquest/core/tutor/llm";
+import {
+  callTutorJson,
+  ModelMissingError,
+  OllamaOfflineError,
+  TutorAuthError,
+} from "@brainquest/core/tutor/llm";
 import {
   buildDraftFiles,
   conceptSystem,
   conceptUser,
   CONCEPT_SCHEMA,
+  lessonSchema,
   lessonSystem,
   lessonUser,
-  LESSON_SCHEMA,
+  normalizeOutline,
   outlineSystem,
   outlineUser,
   OUTLINE_SCHEMA,
@@ -38,6 +45,8 @@ import {
   type GenLesson,
   type PackOutline,
 } from "@brainquest/core/pack/generate";
+
+const PROVIDERS: readonly TutorProvider[] = ["ollama", "anthropic", "openai"];
 
 interface Args {
   topic: string | null;
@@ -80,12 +89,24 @@ function parseArgs(argv: string[]): Args {
       case "topic": a.topic = value; break;
       case "audience": a.audience = value; break;
       case "lang": a.lang = value; break;
-      case "concepts": a.concepts = Number(value); break;
+      case "concepts": {
+        a.concepts = Number(value);
+        if (!Number.isInteger(a.concepts) || a.concepts <= 0) {
+          throw new Error(`--concepts must be a positive integer, got "${value}".`);
+        }
+        break;
+      }
       case "out": a.out = value; break;
       case "seed": a.seed = value; break;
       case "id": a.id = value; break;
       case "name": a.name = value; break;
-      case "provider": a.provider = value as TutorProvider; break;
+      case "provider": {
+        if (!(PROVIDERS as readonly string[]).includes(value)) {
+          throw new Error(`--provider must be one of ${PROVIDERS.join(" | ")}, got "${value}".`);
+        }
+        a.provider = value as TutorProvider;
+        break;
+      }
       case "model": a.model = value; break;
       case "base-url": a.baseUrl = value; break;
       default: throw new Error(`Unknown flag: ${flag}`);
@@ -102,7 +123,7 @@ Usage:
   --topic <t>       REQUIRED. What the pack teaches, e.g. "LLM literacy for non-engineers".
   --audience <a>    Who it's for (default: "curious beginners").
   --lang <code>     Content language (default: en).
-  --concepts <n>    Target concept count (default: 12).
+  --concepts <n>    Target concept count, positive integer (default: 12).
   --seed <file>     Optional source material (.md/.txt) to ground the pack in.
   --out <dir>       Output folder for the drafts (default: local/generated/<id>).
   --id <slug>       Pack id → the project/<id> tag (default: slug of the topic).
@@ -114,9 +135,9 @@ Usage:
                     A paid key is read from TUTOR_API_KEY (local/.env).
 `;
 
-/** Slugify a free-text topic into a stable pack id (mirrors core's slugify rules — kept local to the tool). */
-function slugifyTopic(s: string): string {
-  return s.trim().toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+/** A transport error that means EVERY subsequent call will fail too → abort the run instead of skipping items. */
+function isSystemicError(err: unknown): boolean {
+  return err instanceof OllamaOfflineError || err instanceof ModelMissingError || err instanceof TutorAuthError;
 }
 
 /** Load KEY=VALUE lines from local/.env into process.env (no dep) so TUTOR_API_KEY resolves per convention. */
@@ -138,6 +159,8 @@ function loadLocalEnv(): void {
 function resolveTutorConfig(a: Args): TutorConfig {
   const cfg = loadVaultConfig();
   const provider = a.provider ?? (cfg.tutor.provider as TutorProvider);
+  // Derive model/baseUrl from the EFFECTIVE provider so they can't disagree (a CLI --provider without --model
+  // takes that provider's default; the config block is used only when no --provider was given).
   const model = a.model ?? (a.provider ? DEFAULT_MODEL[provider] : cfg.tutor.model);
   const baseUrl = a.baseUrl ?? (a.provider ? "" : cfg.tutor.baseUrl);
   const apiKey = process.env.TUTOR_API_KEY;
@@ -150,10 +173,14 @@ async function main(): Promise<void> {
   if (!a.topic) { console.error("Missing --topic. Run with --help for usage.\n"); process.exit(2); }
 
   loadLocalEnv();
-  const id = a.id ?? slugifyTopic(a.topic);
+  const id = a.id ?? slugFromTopic(a.topic);
   const name = a.name ?? a.topic;
   const outDir = a.out ?? path.join("local", "generated", id);
   const tutor = resolveTutorConfig(a);
+  if (tutor.provider !== "ollama" && !tutor.apiKey) {
+    console.error(`Provider "${tutor.provider}" needs an API key — set TUTOR_API_KEY in local/.env.\n`);
+    process.exit(2);
+  }
   const seed = a.seed ? await fsp.readFile(a.seed, "utf8") : undefined;
 
   console.log("BrainQuest AI pack generator");
@@ -162,9 +189,9 @@ async function main(): Promise<void> {
   console.log(`  output:   ${outDir}`);
   console.log("");
 
-  // --- Stage 1: outline + prerequisite DAG ---------------------------------------------------------------
+  // --- Stage 1: outline + prerequisite DAG (unguarded — nothing to lose yet; a failure aborts the run) ------
   console.log("① Outlining concepts + prerequisite graph…");
-  const outline: PackOutline = parseOutline(
+  const raw: PackOutline = parseOutline(
     await callTutorJson(
       {
         system: outlineSystem(a.lang),
@@ -174,9 +201,16 @@ async function main(): Promise<void> {
       tutor,
     ),
   );
+  const { outline, dropped } = normalizeOutline(raw);
   console.log(`   → ${outline.concepts.length} concepts, ${outline.lessons.length} lessons.`);
+  if (outline.concepts.length === 0) throw new Error("The outline has no concepts — nothing to generate.");
+  for (const d of dropped) {
+    console.warn(`   ⚠ ${d.kind} "${d.slug}" on "${d.owner}" references no known concept — dropped.`);
+  }
 
   const titleBySlug = new Map(outline.concepts.map((c) => [c.slug, c.title]));
+  const glossBySlug = new Map(outline.concepts.map((c) => [c.slug, c.gloss]));
+  let skipped = 0;
 
   // --- Stage 2: one body per concept --------------------------------------------------------------------
   const conceptBodies: Record<string, ConceptBody> = {};
@@ -200,7 +234,9 @@ async function main(): Promise<void> {
       );
       console.log("ok");
     } catch (err) {
+      if (isSystemicError(err)) throw err; // offline / bad key / missing model → abort, don't skip N times
       console.log(`skipped (${(err as Error).message})`);
+      skipped++;
     }
   }
 
@@ -208,42 +244,57 @@ async function main(): Promise<void> {
   const lessons: Record<string, GenLesson> = {};
   for (const [i, l] of outline.lessons.entries()) {
     process.stdout.write(`③ Lesson ${i + 1}/${outline.lessons.length}: ${l.title}… `);
-    const conceptsForLesson = l.conceptSlugs
-      .map((s) => outline.concepts.find((c) => c.slug === s))
-      .filter((c): c is NonNullable<typeof c> => Boolean(c))
-      .map((c) => ({ title: c.title, gloss: c.gloss }));
+    if (l.conceptSlugs.length === 0) {
+      console.log("skipped (no concepts)");
+      skipped++;
+      continue;
+    }
+    const conceptsForLesson = l.conceptSlugs.map((s) => ({
+      slug: s,
+      title: titleBySlug.get(s) ?? s,
+      gloss: glossBySlug.get(s) ?? "",
+    }));
     try {
       lessons[l.slug] = parseGenLesson(
         await callTutorJson(
           {
             system: lessonSystem(a.lang),
             user: lessonUser({ title: l.title, topic: a.topic, concepts: conceptsForLesson }),
-            schema: LESSON_SCHEMA,
+            schema: lessonSchema(l.conceptSlugs),
           },
           tutor,
         ),
       );
       console.log(`ok (${lessons[l.slug].cards.length} cards)`);
     } catch (err) {
+      if (isSystemicError(err)) throw err;
       console.log(`skipped (${(err as Error).message})`);
+      skipped++;
     }
   }
 
-  // --- Emit draft files ---------------------------------------------------------------------------------
+  // --- Emit draft files (fresh: clear prior generated notes so a re-run can't leave stale files behind) ---
   const files = buildDraftFiles({ outline, conceptBodies, lessons, packId: id, packName: name, lang: a.lang });
-  for (const f of files) {
-    const abs = path.join(outDir, f.relPath);
-    await fsp.mkdir(path.dirname(abs), { recursive: true });
-    await fsp.writeFile(abs, f.content, "utf8");
-  }
+  if (files.length === 0) throw new Error("No notes were generated (every stage was skipped).");
+  await fsp.rm(path.join(outDir, "learning"), { recursive: true, force: true });
+  await fsp.rm(path.join(outDir, "concepts"), { recursive: true, force: true });
+  await fsp.mkdir(path.join(outDir, "learning"), { recursive: true });
+  await fsp.mkdir(path.join(outDir, "concepts"), { recursive: true });
+  await Promise.all(files.map((f) => fsp.writeFile(path.join(outDir, f.relPath), f.content, "utf8")));
 
   console.log("");
-  console.log(`Wrote ${files.length} draft note(s) to ${outDir}`);
+  console.log(`Wrote ${files.length} draft note(s) to ${outDir}${skipped ? ` (${skipped} stage(s) skipped)` : ""}`);
   console.log("Next: curate the drafts in Obsidian, then compile them:");
   console.log(
     `  npm run pack:build -- --in ${outDir} --out local/packs/${id}.json ` +
       `--id ${id} --name "${name}" --lang ${a.lang}`,
   );
+  if (skipped) process.exitCode = 1; // partial output is a loud, non-zero outcome, not silent success
+}
+
+/** Slug a free-text topic into a stable pack id via core's slugify (kept consistent with the compiler). */
+function slugFromTopic(topic: string): string {
+  return slugify(topic) || "pack";
 }
 
 main().catch((err) => {

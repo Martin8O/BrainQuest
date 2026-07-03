@@ -9,11 +9,12 @@ import {
   buildDraftFiles,
   emitConceptNote,
   emitLessonNote,
-  matchConceptTitle,
+  normalizeOutline,
   parseConceptBody,
   parseGenLesson,
   parseOutline,
   type DraftInput,
+  type PackOutline,
 } from "./generate";
 
 // The parser must harvest the exact headings the emitters write — this is the whole point of the round-trip.
@@ -31,7 +32,7 @@ const CFG: VaultConfig = {
 };
 
 // A small acyclic outline: neural-network depends on the two foundational concepts.
-const OUTLINE: DraftInput["outline"] = {
+const OUTLINE: PackOutline = {
   concepts: [
     { slug: "vector", title: "Vector", gloss: "an ordered list of numbers", prerequisites: [] },
     { slug: "weight", title: "Weight", gloss: "a tunable parameter", prerequisites: [] },
@@ -62,8 +63,8 @@ const INPUT: DraftInput = {
     foundations: parseGenLesson({
       intro: "The building blocks.",
       cards: [
-        { term: "vector", gloss: "ordered numbers", definition: "an ordered list of numbers", concept: "Vector" },
-        { term: "weight", gloss: "a parameter", definition: "a tunable scalar on an input", concept: "Weight" },
+        { term: "vector", gloss: "ordered numbers", definition: "an ordered list of numbers", conceptSlug: "vector" },
+        { term: "weight", gloss: "a parameter", definition: "a tunable scalar on an input", conceptSlug: "weight" },
       ],
       recall: ["What is a vector?", "Why do weights matter?"],
     }),
@@ -74,7 +75,7 @@ const INPUT: DraftInput = {
           term: "neural network",
           gloss: "layered units",
           definition: "layers of weighted units",
-          concept: "Neural network",
+          conceptSlug: "neural-network",
         },
       ],
       recall: ["Describe a neural network in your own words."],
@@ -109,15 +110,16 @@ function compileDraft() {
 }
 
 describe("emit → parse round-trip", () => {
-  it("emits cards the parser harvests back verbatim", () => {
+  it("emits cards the parser harvests back verbatim, links resolved by slug", () => {
     const md = emitLessonNote(
       INPUT.outline.lessons[0],
       INPUT.lessons.foundations,
-      { projectSlug: "ai-basics", hub: "AI Basics", conceptTitles: ["Vector", "Weight"] },
+      { projectSlug: "ai-basics", hub: "AI Basics", titleBySlug: new Map([["vector", "Vector"], ["weight", "Weight"]]) },
     );
     const note = parseLearningNote("foundations", "learning/foundations.md", md, CFG);
     expect(note.cards).toHaveLength(2);
     expect(note.cards[0].front).toBe("vector");
+    // conceptSlug "vector" → title "Vector" in the wikilink (correct by construction).
     expect(note.cards[0].conceptLink).toBe("Vector");
     // The back keeps both the gloss and the definition (the `vault` card convention).
     expect(note.cards[0].back).toContain("ordered numbers");
@@ -125,6 +127,20 @@ describe("emit → parse round-trip", () => {
     expect(note.recall.map((r) => r.question)).toEqual(["What is a vector?", "Why do weights matter?"]);
     expect(note.projects).toContain("project/ai-basics");
     expect(note.hub).toBe("AI Basics");
+  });
+
+  it("falls back to the raw slug when a card's conceptSlug has no title (compiler then flags it)", () => {
+    const md = emitLessonNote(
+      { slug: "l", title: "L", conceptSlugs: ["vector"] },
+      parseGenLesson({
+        intro: "",
+        cards: [{ term: "t", gloss: "g", definition: "d", conceptSlug: "unknown-slug" }],
+        recall: [],
+      }),
+      { projectSlug: "p", hub: "H", titleBySlug: new Map([["vector", "Vector"]]) },
+    );
+    const note = parseLearningNote("l", "learning/l.md", md, CFG);
+    expect(note.cards[0].conceptLink).toBe("unknown-slug");
   });
 
   it("emits a concept whose gloss and prerequisite edges parse back", () => {
@@ -174,8 +190,10 @@ describe("runtime guards reject malformed LLM output", () => {
     expect(() => parseOutline({ lessons: [] })).toThrow(/concepts/);
   });
 
-  it("parseGenLesson requires each card's fields", () => {
-    expect(() => parseGenLesson({ intro: "", cards: [{ term: "t" }], recall: [] })).toThrow(/gloss/);
+  it("parseGenLesson requires each card's fields incl. conceptSlug", () => {
+    expect(() => parseGenLesson({ intro: "", cards: [{ term: "t", gloss: "g", definition: "d" }], recall: [] })).toThrow(
+      /conceptSlug/,
+    );
   });
 
   it("parseOutline defaults an omitted prerequisites list to empty", () => {
@@ -184,28 +202,40 @@ describe("runtime guards reject malformed LLM output", () => {
   });
 });
 
-describe("matchConceptTitle reconciles sloppy LLM concept links", () => {
-  const titles = ["Neural network", "Vector", "Weight"];
-  it("keeps an exact title", () => expect(matchConceptTitle("Vector", titles)).toBe("Vector"));
-  it("matches case-insensitively", () => expect(matchConceptTitle("vector", titles)).toBe("Vector"));
-  it("strips a trailing ': gloss' the model appended", () =>
-    expect(matchConceptTitle("Neural network: layers of weighted units", titles)).toBe("Neural network"));
-  it("strips a trailing ' — gloss'", () =>
-    expect(matchConceptTitle("Weight — a tunable parameter", titles)).toBe("Weight"));
-  it("leaves a genuinely unknown value untouched (compiler will flag it)", () =>
-    expect(matchConceptTitle("Something else", titles)).toBe("Something else"));
+describe("normalizeOutline sanitizes slugs and resolves references", () => {
+  it("slugifies unsafe slugs so file paths stay inside the output dir", () => {
+    const { outline } = normalizeOutline({
+      concepts: [{ slug: "../escape", title: "Escape", gloss: "g", prerequisites: [] }],
+      lessons: [],
+    });
+    expect(outline.concepts[0].slug).toBe("escape");
+    expect(outline.concepts[0].slug).not.toMatch(/[/.]/);
+  });
 
-  it("makes cards resolve even when the LLM emits 'Title: gloss' concept values", () => {
-    const md = emitLessonNote(
-      { slug: "l", title: "L", conceptSlugs: ["vector"] },
-      parseGenLesson({
-        intro: "",
-        cards: [{ term: "v", gloss: "g", definition: "d", concept: "Vector: an ordered list of numbers" }],
-        recall: [],
-      }),
-      { projectSlug: "p", hub: "H", conceptTitles: ["Vector"] },
-    );
-    const note = parseLearningNote("l", "learning/l.md", md, CFG);
-    expect(note.cards[0].conceptLink).toBe("Vector");
+  it("de-duplicates colliding slugs so no draft file overwrites another", () => {
+    const { outline } = normalizeOutline({
+      concepts: [
+        { slug: "agent", title: "Agent A", gloss: "g", prerequisites: [] },
+        { slug: "agent", title: "Agent B", gloss: "g", prerequisites: [] },
+      ],
+      lessons: [],
+    });
+    expect(outline.concepts.map((c) => c.slug)).toEqual(["agent", "agent-2"]);
+  });
+
+  it("remaps references to sanitized slugs and drops unknown ones", () => {
+    const { outline, dropped } = normalizeOutline({
+      concepts: [
+        { slug: "Foundations!", title: "Foundations", gloss: "g", prerequisites: [] },
+        { slug: "advanced", title: "Advanced", gloss: "g", prerequisites: ["Foundations!", "ghost"] },
+      ],
+      lessons: [{ slug: "l1", title: "L1", conceptSlugs: ["advanced", "ghost"] }],
+    });
+    expect(outline.concepts[1].prerequisites).toEqual(["foundations"]); // remapped, self/unknown removed
+    expect(outline.lessons[0].conceptSlugs).toEqual(["advanced"]); // "ghost" dropped
+    expect(dropped).toEqual([
+      { kind: "prerequisite", owner: "advanced", slug: "ghost" },
+      { kind: "lesson-concept", owner: "l1", slug: "ghost" },
+    ]);
   });
 });
