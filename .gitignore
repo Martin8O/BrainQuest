@@ -18,6 +18,14 @@ dist/
 *.tsbuildinfo
 next-env.d.ts
 
+# ── Capacitor native shell (M3) — generated per-machine via `npx cap add android` ──
+# The android/ project is regenerated from capacitor.config.ts + the web build, like node_modules.
+# Signing keys are SECRETS — never commit a keystore.
+/android/
+/ios/
+*.keystore
+*.jks
+
 # ── Testing ────────────────────────────────────────────────────────────────
 /coverage
 

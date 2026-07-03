@@ -4,8 +4,14 @@
 // positioned, mastery-coloured SkillMap (pure, computed once per request): topic territories, nodes,
 // edges. This component owns ONLY the view (pan / zoom) and the selection. Clicking a node selects it
 // and the side panel shows that concept's cards + the notes they came from. No layout math runs here.
+//
+// M3 touch redesign: the gestures are pointer-based and multi-touch — one-finger drag pans, two fingers
+// pinch-zoom around their midpoint, double-tap zooms in, wheel zooms toward the cursor. The zoom/pan
+// arithmetic lives in the pure `viewport` module (unit-tested); this file only translates raw pointer
+// events into viewBox coordinates and feeds them in. On phones the detail panel is a bottom sheet.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Lock } from "lucide-react";
+import { focalZoom, pinchStep, type View } from "@brainquest/core/graph/viewport";
 import type { MasteryLevel } from "@brainquest/core/progress/types";
 import type { MapNode, PanelCard, SkillMap } from "@brainquest/core/graph/types";
 
@@ -29,19 +35,12 @@ const hue = (id: number) => REGION_HUES[((id % REGION_HUES.length) + REGION_HUES
 
 const MUTED_HUE = "#71717a"; // the "Unlinked" catch-all region (no topic)
 
-const MIN_SCALE = 0.4;
-// Deep enough that, combined with constant-size labels (which don't grow with zoom), dense topic
-// clusters genuinely spread apart instead of just scaling up together.
-const MAX_SCALE = 7;
-const clampScale = (s: number) => Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
-
 const pct = (x: number) => Math.round(x * 100);
 
-interface View {
-  x: number;
-  y: number;
-  scale: number;
-}
+/** Smallest tappable radius (viewBox units): dots can be tiny, but a finger needs a comfortable target —
+ *  a transparent hit circle at least this big sits over every node. It also makes hollow *locked* rings
+ *  tappable, which a `fill:none` visual circle is not. */
+const MIN_HIT_R = 12;
 
 export default function MapClient({
   map,
@@ -61,7 +60,15 @@ export default function MapClient({
   const [showLabels, setShowLabels] = useState(false);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const dragRef = useRef<{ sx: number; sy: number; ox: number; oy: number; moved: boolean } | null>(null);
+  // Active pointers by id → their current client coordinates. Size drives the gesture: 1 = pan, 2 = pinch.
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  // Live pinch baseline (viewBox units): the last frame's finger distance + midpoint.
+  const pinchRef = useRef<{ dist: number; mid: { x: number; y: number } } | null>(null);
+  // Single-finger pan bookkeeping: last client point (for incremental deltas) + origin (to tell a drag
+  // from a tap) + whether it moved past the tap threshold.
+  const dragRef = useRef<{ lastX: number; lastY: number; ox: number; oy: number; moved: boolean } | null>(null);
+  // Last background tap (for double-tap-to-zoom) — timestamp comes from the event, never Date.now().
+  const tapRef = useRef<{ t: number; x: number; y: number } | null>(null);
 
   const nodeByConcept = useMemo(() => new Map(map.nodes.map((nd) => [nd.concept, nd])), [map.nodes]);
 
@@ -76,20 +83,59 @@ export default function MapClient({
     return set;
   }, [selected, map.edges]);
 
-  // Wheel zoom via a native non-passive listener (React's onWheel is passive → can't preventDefault).
+  // Screen (client) pixel → viewBox coordinate, via the live CTM. This accounts for the SVG's
+  // preserveAspectRatio letterboxing, so pan/zoom stay accurate whatever the element's aspect ratio.
+  function clientToViewBox(clientX: number, clientY: number): { x: number; y: number } {
+    const ctm = svgRef.current?.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
+    const p = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
+    return { x: p.x, y: p.y };
+  }
+  // A client-pixel delta → viewBox units. The CTM scale is uniform (preserveAspectRatio), so `a` suffices.
+  function clientDeltaToViewBox(dxPx: number, dyPx: number): { x: number; y: number } {
+    const k = svgRef.current?.getScreenCTM()?.a || 1;
+    return { x: dxPx / k, y: dyPx / k };
+  }
+  // Pointer capture keeps a gesture bound to the SVG even if the finger slides off it. Both calls can
+  // throw (e.g. the pointer is no longer active, or a synthetic event carries no active pointer) — guard
+  // them so one bad pointer never aborts a handler mid-gesture.
+  function capturePointer(id: number) {
+    try {
+      svgRef.current?.setPointerCapture(id);
+    } catch {
+      /* no active pointer to capture */
+    }
+  }
+  function releasePointer(id: number) {
+    try {
+      svgRef.current?.releasePointerCapture(id);
+    } catch {
+      /* already released */
+    }
+  }
+
+  // Current two-finger distance + midpoint, in viewBox units.
+  function pinchState(): { dist: number; mid: { x: number; y: number } } | null {
+    const pts = [...pointersRef.current.values()];
+    if (pts.length < 2) return null;
+    const a = clientToViewBox(pts[0].x, pts[0].y);
+    const b = clientToViewBox(pts[1].x, pts[1].y);
+    return { dist: Math.hypot(a.x - b.x, a.y - b.y), mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } };
+  }
+
+  // Wheel zoom toward the cursor via a native non-passive listener (React's onWheel is passive → can't
+  // preventDefault). Registered once; the handler reads live state through refs + the functional setter.
   useEffect(() => {
     const el = svgRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      setView((v) => {
-        const s = clampScale(v.scale * (e.deltaY < 0 ? 1.12 : 0.89));
-        return { x: v.x + (v.scale - s) * (map.width / 2), y: v.y + (v.scale - s) * (map.height / 2), scale: s };
-      });
+      const f = clientToViewBox(e.clientX, e.clientY);
+      setView((v) => focalZoom(v, f.x, f.y, e.deltaY < 0 ? 1.12 : 0.89));
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [map.width, map.height]);
+  }, []);
 
   // Esc clears the selection.
   useEffect(() => {
@@ -100,38 +146,94 @@ export default function MapClient({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  function zoomTo(nextScale: number) {
-    const s = clampScale(nextScale);
-    setView((v) => ({
-      x: v.x + (v.scale - s) * (map.width / 2),
-      y: v.y + (v.scale - s) * (map.height / 2),
-      scale: s,
-    }));
+  // Toolbar / reset zoom around the canvas centre.
+  function zoomBy(factor: number) {
+    setView((v) => focalZoom(v, map.width / 2, map.height / 2, factor));
   }
 
-  // Pan: pointer drag on the background. Screen pixels → user units via the live viewBox/clientWidth ratio.
   function onPointerDown(e: React.PointerEvent<SVGSVGElement>) {
-    dragRef.current = { sx: e.clientX, sy: e.clientY, ox: view.x, oy: view.y, moved: false };
-    svgRef.current?.setPointerCapture(e.pointerId);
+    capturePointer(e.pointerId);
+    const p = pointersRef.current;
+    p.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (p.size === 2) {
+      dragRef.current = null; // a second finger ends any pan and starts a pinch
+      pinchRef.current = pinchState();
+    } else if (p.size === 1) {
+      dragRef.current = { lastX: e.clientX, lastY: e.clientY, ox: e.clientX, oy: e.clientY, moved: false };
+    }
   }
+
   function onPointerMove(e: React.PointerEvent<SVGSVGElement>) {
-    const d = dragRef.current;
-    if (!d) return;
-    const ratio = map.width / (svgRef.current?.clientWidth || map.width);
-    const ddx = (e.clientX - d.sx) * ratio;
-    const ddy = (e.clientY - d.sy) * ratio;
-    if (Math.abs(ddx) + Math.abs(ddy) > 3) d.moved = true;
-    setView((v) => ({ ...v, x: d.ox + ddx, y: d.oy + ddy }));
+    const p = pointersRef.current;
+    if (!p.has(e.pointerId)) return;
+    p.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (p.size >= 2 && pinchRef.current) {
+      const ns = pinchState();
+      if (!ns) return;
+      const prev = pinchRef.current;
+      const factor = prev.dist > 0 && ns.dist > 0 ? ns.dist / prev.dist : 1;
+      setView((v) => pinchStep(v, ns.mid.x, ns.mid.y, prev.mid.x, prev.mid.y, factor));
+      pinchRef.current = ns;
+    } else if (p.size === 1 && dragRef.current) {
+      const d = dragRef.current;
+      const dv = clientDeltaToViewBox(e.clientX - d.lastX, e.clientY - d.lastY);
+      if (Math.hypot(e.clientX - d.ox, e.clientY - d.oy) > 4) d.moved = true;
+      d.lastX = e.clientX;
+      d.lastY = e.clientY;
+      setView((v) => ({ ...v, x: v.x + dv.x, y: v.y + dv.y }));
+    }
   }
+
   function onPointerUp(e: React.PointerEvent<SVGSVGElement>) {
-    const d = dragRef.current;
-    dragRef.current = null;
-    svgRef.current?.releasePointerCapture?.(e.pointerId);
-    if (d && !d.moved) setSelected(null); // a click on empty canvas clears the selection
+    const p = pointersRef.current;
+    const had = p.has(e.pointerId);
+    p.delete(e.pointerId);
+    releasePointer(e.pointerId);
+
+    if (p.size >= 2) {
+      pinchRef.current = pinchState(); // re-baseline the pinch on the fingers that remain
+    } else if (p.size === 1) {
+      // Dropped from a pinch to one finger — keep panning with it, no jump, and never treat as a tap.
+      pinchRef.current = null;
+      const only = [...p.values()][0];
+      dragRef.current = { lastX: only.x, lastY: only.y, ox: -1e9, oy: -1e9, moved: true };
+    } else {
+      const d = dragRef.current;
+      pinchRef.current = null;
+      dragRef.current = null;
+      if (had && d && !d.moved) handleBackgroundTap(e); // a clean tap on empty canvas
+    }
+  }
+
+  // A tap on the empty canvas: a second tap in quick succession zooms in there; otherwise it clears the
+  // selection and arms the double-tap.
+  function handleBackgroundTap(e: React.PointerEvent<SVGSVGElement>) {
+    const last = tapRef.current;
+    if (last && e.timeStamp - last.t < 300 && Math.hypot(e.clientX - last.x, e.clientY - last.y) < 30) {
+      const f = clientToViewBox(e.clientX, e.clientY);
+      setView((v) => focalZoom(v, f.x, f.y, 1.8));
+      tapRef.current = null;
+    } else {
+      tapRef.current = { t: e.timeStamp, x: e.clientX, y: e.clientY };
+      setSelected(null);
+    }
   }
 
   const selectedNode = selected ? nodeByConcept.get(selected) ?? null : null;
   const dim = selected !== null; // when something is selected, fade the unrelated parts
+
+  // Shared detail-panel props, rendered as a full card in the desktop sidebar and as a bare (chrome-less)
+  // body inside the mobile bottom sheet — the sheet supplies its own border/background.
+  const detailProps = selectedNode
+    ? {
+        node: selectedNode,
+        related: [...neighbours].sort((a, b) => a.localeCompare(b)),
+        cards: cardsByConcept[selectedNode.concept.toLowerCase()] ?? [],
+        onPick: setSelected,
+        onClose: () => setSelected(null),
+      }
+    : null;
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
@@ -139,7 +241,7 @@ export default function MapClient({
       <div className="relative flex-1 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
         {/* Toolbar */}
         <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
-          <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white/90 px-2 py-1 text-xs text-zinc-600 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-300">
+          <label className="hidden cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white/90 px-2 py-1 text-xs text-zinc-600 backdrop-blur sm:flex dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-300">
             <input
               type="checkbox"
               checked={showLabels}
@@ -149,13 +251,13 @@ export default function MapClient({
             Labels
           </label>
           <div className="flex overflow-hidden rounded-lg border border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/90">
-            <ToolBtn onClick={() => zoomTo(view.scale / 1.25)} label="Zoom out">
+            <ToolBtn onClick={() => zoomBy(1 / 1.25)} label="Zoom out">
               −
             </ToolBtn>
             <ToolBtn onClick={() => setView({ x: 0, y: 0, scale: 1 })} label="Reset view">
               ⤢
             </ToolBtn>
-            <ToolBtn onClick={() => zoomTo(view.scale * 1.25)} label="Zoom in">
+            <ToolBtn onClick={() => zoomBy(1.25)} label="Zoom in">
               +
             </ToolBtn>
           </div>
@@ -164,11 +266,11 @@ export default function MapClient({
         <svg
           ref={svgRef}
           viewBox={`0 0 ${map.width} ${map.height}`}
-          className="h-[62vh] w-full cursor-grab touch-none select-none active:cursor-grabbing lg:h-[74vh]"
+          className="h-[68vh] w-full cursor-grab touch-none select-none active:cursor-grabbing lg:h-[74vh]"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          onPointerLeave={onPointerUp}
+          onPointerCancel={onPointerUp}
         >
           <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
             {/* Topic territories — faint background circles only; their headings are drawn in the label
@@ -254,22 +356,32 @@ export default function MapClient({
             })}
           </g>
         </svg>
+
+        {/* Touch hint (mobile only — desktop has the legend + its own hint line). */}
+        <p className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-[11px] text-zinc-400 lg:hidden">
+          Drag to pan · pinch or double-tap to zoom · tap a node
+        </p>
       </div>
 
-      {/* Detail panel / legend */}
-      <aside className="w-full shrink-0 lg:w-80">
-        {selectedNode ? (
-          <NodeDetail
-            node={selectedNode}
-            related={[...neighbours].sort((a, b) => a.localeCompare(b))}
-            cards={cardsByConcept[selectedNode.concept.toLowerCase()] ?? []}
-            onPick={setSelected}
-            onClose={() => setSelected(null)}
-          />
-        ) : (
-          <Legend />
-        )}
+      {/* Detail panel / legend — a sidebar on desktop… */}
+      <aside className="hidden shrink-0 lg:block lg:w-80">
+        {detailProps ? <NodeDetail {...detailProps} /> : <Legend />}
       </aside>
+
+      {/* …and a bottom sheet on phones, shown only when a node is selected. */}
+      {detailProps && (
+        <div className="fixed inset-x-0 bottom-0 z-30 lg:hidden">
+          <div
+            className="mx-auto max-h-[62vh] max-w-2xl overflow-y-auto rounded-t-2xl border-t border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
+            <div className="sticky top-0 flex justify-center bg-white pt-2 pb-1 dark:bg-zinc-900">
+              <span className="h-1.5 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600" aria-hidden />
+            </div>
+            <NodeDetail {...detailProps} bare />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -281,7 +393,7 @@ function ToolBtn({ children, onClick, label }: { children: React.ReactNode; onCl
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="px-3 py-1 text-sm font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+      className="px-3.5 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
     >
       {children}
     </button>
@@ -311,7 +423,7 @@ function NodeDot({
     <g
       transform={`translate(${node.x} ${node.y})`}
       style={{ cursor: "pointer", opacity }}
-      // Stop the pointer-down from starting a background pan, so a click on a node just selects it.
+      // Stop the pointer-down from starting a background pan/pinch, so a touch on a node just selects it.
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
@@ -320,6 +432,8 @@ function NodeDot({
       onMouseEnter={() => onHover(node.concept)}
       onMouseLeave={() => onHover(null)}
     >
+      {/* Transparent, finger-sized hit target over the (possibly tiny, possibly hollow) visible dot. */}
+      <circle r={Math.max(r + 6, MIN_HIT_R)} fill="transparent" />
       {selected && <circle r={r + 5} fill="none" stroke={ACCENT} strokeWidth={2} />}
       {/* Locked = hollow ring (gated — can't reach yet); unlocked = solid dot (available / started). */}
       <circle
@@ -328,6 +442,7 @@ function NodeDot({
         stroke={node.locked ? color : selected || related ? ACCENT : "transparent"}
         strokeOpacity={node.locked ? 0.6 : 1}
         strokeWidth={1.5}
+        style={{ pointerEvents: "none" }}
       />
     </g>
   );
@@ -367,16 +482,19 @@ function NodeDetail({
   cards,
   onPick,
   onClose,
+  bare = false,
 }: {
   node: MapNode;
   related: string[];
   cards: PanelCard[];
   onPick: (concept: string) => void;
   onClose: () => void;
+  /** In the mobile bottom sheet the sheet supplies the card chrome, so drop this panel's own border/bg. */
+  bare?: boolean;
 }) {
   const notes = [...new Set(cards.map((c) => c.sourceSlug))];
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+    <div className={bare ? "px-5 pb-5 pt-1" : "rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"}>
       <div className="mb-3 flex items-start justify-between gap-2">
         <h2 className="text-lg font-semibold leading-tight">{node.concept}</h2>
         <button

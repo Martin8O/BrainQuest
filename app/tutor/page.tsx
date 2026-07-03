@@ -7,7 +7,6 @@
 import { Suspense } from "react";
 import { GraduationCap } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { primaryHeading } from "@brainquest/core/vault/configTypes";
 import { areaForProjects } from "@brainquest/core/tutor/area";
 import TutorClient from "./TutorClient";
 import { useBrain } from "../lib/BrainProvider";
@@ -68,7 +67,7 @@ function TutorView() {
           <div className="text-4xl">🤔</div>
           <h2 className="mt-3 text-xl font-semibold">No recall prompts yet</h2>
           <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-            Add a “{primaryHeading(config.harvest.recallHeading)}” section to a note and rebuild the pack
+            Add a recall-prompt section to a note and rebuild the pack
             (<code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">npm run app:data</code>).
           </p>
         </div>

@@ -17,7 +17,6 @@ import {
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
-import { primaryHeading } from "@brainquest/core/vault/configTypes";
 import type { Card, ConceptNote, LearningNote } from "@brainquest/core/vault/types";
 import { ensureStates, selectDue } from "@brainquest/core/srs/scheduler";
 import { computeProgress, gamificationFor } from "@brainquest/core/progress/mastery";
@@ -35,11 +34,6 @@ export default function Home() {
   const now = new Date();
   const vault = snapshot;
   const { cards, recall, graph } = vault.harvest;
-
-  // The headings this vault actually uses (primary alias) — shown so the labels match the user's notes,
-  // English or Czech, instead of a hardcoded language.
-  const cardsHeading = primaryHeading(config.harvest.cardsHeading);
-  const relatedHeading = primaryHeading(config.harvest.relatedHeading);
 
   // How many cards are due right now — drives the "start session" call to action.
   const dueCount = selectDue(
@@ -133,7 +127,7 @@ export default function Home() {
 
       <section className="mb-12">
         <SectionHeading icon={Layers} title="Harvested cards">
-          First {Math.min(CARD_PREVIEW_COUNT, cards.length)} of {cards.length}, parsed from the “{cardsHeading}” bullets.
+          First {Math.min(CARD_PREVIEW_COUNT, cards.length)} of {cards.length}, parsed from your notes.
         </SectionHeading>
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {cards.slice(0, CARD_PREVIEW_COUNT).map((c) => (
@@ -153,7 +147,7 @@ export default function Home() {
 
       <section>
         <SectionHeading icon={Lightbulb} title="Concepts" count={vault.concepts.length}>
-          {graph.nodes.length} nodes · {graph.edges.length} edges in the concept graph (from “{relatedHeading}”).
+          {graph.nodes.length} nodes · {graph.edges.length} edges in the concept graph.
         </SectionHeading>
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {vault.concepts.map((c) => (

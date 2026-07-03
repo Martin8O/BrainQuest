@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { FloatingNav } from "./components/FloatingNav";
@@ -23,6 +23,16 @@ export const metadata: Metadata = {
   description: "Turn your vault vault into a spaced-repetition learning game.",
 };
 
+// M3 (mobile shell): draw under the status bar / notch (`viewport-fit=cover`) — globals.css then adds
+// safe-area padding so the floating nav and content stay clear of it. themeColor tints the status bar.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -37,7 +47,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full flex flex-col pt-16">
+      <body className="min-h-full flex flex-col">
         <BrainProvider>
           <FloatingNav />
           {children}
