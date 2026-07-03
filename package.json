@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "pack:build": "tsx tools/compile-pack.mts",
+    "pack:generate": "tsx tools/generate-pack.mts",
     "app:data": "tsx tools/build-app-data.mts",
     "mobile:build": "npm run app:data && next build",
     "cap:sync": "npm run mobile:build && cap sync",
