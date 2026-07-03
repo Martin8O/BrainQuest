@@ -21,6 +21,11 @@ next-env.d.ts
 # ── Testing ────────────────────────────────────────────────────────────────
 /coverage
 
+# ── Generated client-app data (M2: built by `npm run app:data`, not committed) ──
+/public/pack.json
+/public/app-config.json
+/public/reviews.seed.json
+
 # ── Python (any local tooling/probes) ──────────────────────────────────────
 .venv/
 __pycache__/

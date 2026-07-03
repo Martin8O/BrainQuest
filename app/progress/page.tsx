@@ -1,13 +1,13 @@
-// Progress page (server component). Reads the harvest (B1) + review store (B2), derives the whole
+"use client";
+
+// Progress page (client). Reads the harvest + review store from the client data layer, derives the whole
 // mastery picture with the pure computeProgress(), and renders it: overall, per-concept ("where am I
-// vs. everything ahead"), and per-cluster. force-dynamic because it reflects the live review store.
+// vs. everything ahead"), and per-cluster.
 import { TrendingUp } from "lucide-react";
-import { readVault } from "@brainquest/core/vault/reader";
-import { loadReviewStore } from "@brainquest/core/srs/store";
 import { computeProgress } from "@brainquest/core/progress/mastery";
 import type { ClusterProgress, ConceptMastery, MasteryLevel } from "@brainquest/core/progress/types";
-
-export const dynamic = "force-dynamic";
+import { useBrain } from "../lib/BrainProvider";
+import { PageError, PageLoading } from "../lib/PageStatus";
 
 /**
  * Visual treatment per mastery level — label + Tailwind classes for chips and the legend. The dot
@@ -26,10 +26,12 @@ function pct(x: number): number {
   return Math.round(x * 100);
 }
 
-export default async function ProgressPage() {
-  const vault = await readVault();
-  const store = await loadReviewStore();
-  const { overall, concepts, clusters } = computeProgress(vault.harvest, vault.learning, store);
+export default function ProgressPage() {
+  const { status, error, snapshot, store } = useBrain();
+  if (status === "loading") return <PageLoading label="Loading your progress…" />;
+  if (status === "error" || !snapshot) return <PageError error={error} />;
+
+  const { overall, concepts, clusters } = computeProgress(snapshot.harvest, snapshot.learning, store);
 
   const byLevel = LEVEL_ORDER.map((level) => ({
     level,
@@ -44,12 +46,6 @@ export default async function ProgressPage() {
         </h1>
         <p className="mt-1 text-sm text-zinc-500">How much you know vs. what&apos;s still ahead — grows as your vault does.</p>
       </header>
-
-      {!vault.ok && (
-        <div className="mb-8 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-          Could not read the vault. {vault.error}
-        </div>
-      )}
 
       {/* Overall */}
       <section className="mb-10 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">

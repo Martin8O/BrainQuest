@@ -1,10 +1,9 @@
-// Server-only: generate (or reuse) a difficulty ladder of fresh question variations for one recall
-// prompt. It reads the source note (READ-ONLY — never writes the vault), checks the cache, and only on a
-// miss asks the local model (via the shared Ollama transport) to produce the four rungs, constrained to
-// our schema. Imported only by the "use server" tutor action. Reproducible: the transport pins seed +
-// temperature, so the same note yields the same ladder — which is also why caching it is safe.
+// Generate a difficulty ladder of fresh question variations for one recall prompt. Pure of fs/env: the
+// caller supplies the note text (from the pack) and the resolved TutorConfig; caching is the caller's job
+// (the client persists ladders in IndexedDB). It asks the model (via the shared transport) to produce the
+// four rungs, constrained to our schema. Reproducible: the transport pins seed + temperature, so the same
+// note yields the same ladder — which is why caching it is safe.
 import { callTutorJson } from "./llm";
-import { loadTutorConfig } from "./config";
 import {
   RUNGS,
   VARIATION_KEYS,
@@ -13,13 +12,7 @@ import {
   buildVariationPrompt,
   rungAt,
 } from "./variationPrompt";
-import {
-  getCachedVariations,
-  hashNote,
-  loadVariationCache,
-  saveVariationCache,
-} from "./variationStore";
-import { readNoteBody } from "../vault/reader";
+import type { TutorConfig } from "./clientConfig";
 import type { Variation } from "./types";
 
 /**
@@ -38,54 +31,32 @@ function toVariations(raw: unknown, fallbackQuestion: string): Variation[] {
 
 /**
  * Re-stamp each rung's label + bloom from the code's ladder (RUNGS), keyed by level. label/bloom are
- * DERIVED from the rung, not the model — so a cached entry generated before the labels changed (e.g. the
- * old Czech labels) can never resurface stale text. Only the `question` is ever trusted from the cache.
+ * DERIVED from the rung, not the model — so a cached entry generated before the labels changed can never
+ * resurface stale text. Only the `question` is ever trusted from the cache.
  */
-function withCurrentLabels(variations: Variation[]): Variation[] {
+export function withCurrentLabels(variations: Variation[]): Variation[] {
   return variations.map((v) => {
     const rung = rungAt(v.level);
     return { ...v, label: rung.label, bloom: rung.bloom };
   });
 }
 
-/** Result of asking for a ladder — `cached` tells the caller (and UI) whether generation actually ran. */
-export interface GeneratedLadder {
-  variations: Variation[];
-  cached: boolean;
-}
-
 /**
- * Get the four-rung ladder for a recall prompt: cache hit (same note + model) → instant; miss → generate,
- * persist, return. On generation failure the transport errors (OllamaOfflineError / ModelMissingError /
- * Error) propagate so the action can map them to a typed response.
+ * Generate the four-rung ladder for a recall prompt from its source note. On failure the transport errors
+ * (OllamaOfflineError / ModelMissingError / TutorAuthError / Error) propagate so the caller can map them
+ * to a typed response. Caching (cache hit → skip this call) is the caller's responsibility.
  */
-export async function getLadder(args: {
-  promptId: string;
-  question: string;
-  sourcePath: string;
-}): Promise<GeneratedLadder> {
-  const { model } = loadTutorConfig();
-  const noteText = await readNoteBody(args.sourcePath);
-  const noteHash = hashNote(noteText);
-
-  const cache = await loadVariationCache();
-  const hit = getCachedVariations(cache, args.promptId, noteHash, model);
-  if (hit) return { variations: withCurrentLabels(hit), cached: true };
-
-  const raw = await callTutorJson({
-    system: VARIATION_SYSTEM_PROMPT,
-    user: buildVariationPrompt(args.question, noteText),
-    schema: VARIATION_SCHEMA,
-  });
-  const variations = toVariations(raw, args.question);
-
-  cache.entries[args.promptId] = {
-    noteHash,
-    model,
-    generatedAt: new Date().toISOString(),
-    variations,
-  };
-  await saveVariationCache(cache);
-
-  return { variations, cached: false };
+export async function generateLadder(
+  args: { question: string; noteText: string },
+  cfg: TutorConfig,
+): Promise<Variation[]> {
+  const raw = await callTutorJson(
+    {
+      system: VARIATION_SYSTEM_PROMPT,
+      user: buildVariationPrompt(args.question, args.noteText),
+      schema: VARIATION_SCHEMA,
+    },
+    cfg,
+  );
+  return toVariations(raw, args.question);
 }

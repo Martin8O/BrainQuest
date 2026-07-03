@@ -1,18 +1,21 @@
 "use client";
 
 // The tutor loop. It owns the UI state (which area filter, which prompt, the difficulty ladder + chosen
-// rung, the typed answer, the returned grade) and calls two server actions: getVariations (D2 — builds a
-// fresh, fixed ladder of rephrasings calibrated to the learner's mastery) and gradeRecallAnswer (D1 —
-// grades the answer against the source note). The AREA FILTER lets the learner focus on chosen projects
-// and skip the niche (RL is off by default); the choice persists in localStorage. The original question
-// shows instantly; the variations swap in when the local model finishes, and are cached server-side so
-// the second visit is instant. Picking the next prompt uses Math.random() inside a click handler only
-// (never during render) — UI variety, no reproducibility concern and no hydration mismatch.
+// rung, the typed answer, the returned grade) and calls the CLIENT tutor (lib/tutorClient): getVariations
+// (D2 — a fresh, fixed ladder of rephrasings calibrated to the learner's mastery) and gradeRecallAnswer
+// (D1 — grades the answer against the source note text from the pack). Both run in the browser against the
+// user's chosen backend; the tutor is off by default (a banner links to Settings). The AREA FILTER lets
+// the learner focus on chosen projects and skip the niche (RL is off by default); the choice persists in
+// localStorage. The original question shows instantly; the variations swap in when generation finishes and
+// are cached in IndexedDB so the second visit is instant. Picking the next prompt uses Math.random() inside
+// a click handler only (never during render) — UI variety, no reproducibility concern, no hydration mismatch.
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, GraduationCap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { computeProgress } from "@brainquest/core/progress/mastery";
 import { AreaFilter } from "../components/AreaFilter";
-import { gradeRecallAnswer, getVariations } from "./actions";
+import { useBrain } from "../lib/BrainProvider";
+import { getVariationsClient, gradeRecallAnswerClient, loadTutorConfig } from "../lib/tutorClient";
 import type { GradeResponse, GradeResult, Variation, VariationLadder, Verdict } from "@brainquest/core/tutor/types";
 import type { TutorArea, TutorPrompt } from "./types";
 
@@ -47,6 +50,26 @@ export default function TutorClient({
   /** When set (forwarded from a session card), open on this prompt and force its area on. */
   initialPromptId?: string;
 }) {
+  const { snapshot, store, noteBody } = useBrain();
+  // Whether the AI tutor is switched on (device setting, default OFF). Read once — a banner nudges to Settings.
+  const [tutorOn] = useState(() => loadTutorConfig().enabled);
+
+  // A prompt's source-note text (from the pack) + the learner's C1 mastery of that note's cluster — the two
+  // inputs the client tutor needs: grounding text for grading, and the calibrated start difficulty.
+  const notePathBySlug = useMemo(() => new Map((snapshot?.learning ?? []).map((n) => [n.slug, n.path])), [snapshot]);
+  const strengthBySlug = useMemo(() => {
+    if (!snapshot) return new Map<string, number>();
+    const clusters = computeProgress(snapshot.harvest, snapshot.learning, store).clusters;
+    return new Map(clusters.map((c) => [c.slug, c.avgStrength]));
+  }, [snapshot, store]);
+  const noteTextFor = useCallback(
+    (slug: string) => {
+      const p = notePathBySlug.get(slug);
+      return p ? noteBody(p) ?? "" : "";
+    },
+    [notePathBySlug, noteBody],
+  );
+
   // Which areas (projects) are active. Init from each area's default (RL off) — deterministic, so the
   // server render and first client render match; a saved preference is applied in an effect after mount.
   // A forwarded card's area is forced on so its prompt is reachable even if that area is off by default.
@@ -107,8 +130,18 @@ export default function TutorClient({
   // synchronous setState here — the resets are derived from the id comparison instead.
   useEffect(() => {
     if (!promptId) return;
+    const p = prompts.find((x) => x.id === promptId);
+    if (!p) return;
     let cancelled = false;
-    void getVariations(promptId).then((res) => {
+    void getVariationsClient(
+      {
+        promptId,
+        question: p.question,
+        noteText: noteTextFor(p.sourceSlug),
+        strength: strengthBySlug.get(p.sourceSlug) ?? 0,
+      },
+      loadTutorConfig(),
+    ).then((res) => {
       if (cancelled) return;
       if (res.ok) {
         setLadderData({ promptId, ladder: res.ladder, note: null });
@@ -120,7 +153,7 @@ export default function TutorClient({
     return () => {
       cancelled = true;
     };
-  }, [promptId]);
+  }, [promptId, prompts, noteTextFor, strengthBySlug]);
 
   /** The question actually shown + graded: the chosen rung when the ladder is ready, else the original. */
   const current: Variation | null = ladder?.variations.find((v) => v.level === level) ?? null;
@@ -165,23 +198,39 @@ export default function TutorClient({
   }, [pool]);
 
   const submit = useCallback(async () => {
-    if (pending || !answer.trim() || !promptId) return;
+    if (pending || !answer.trim() || !promptId || !prompt) return;
     setPending(true);
     setResponse(null);
     try {
-      // Grade the exact question the learner saw (the chosen variation), against its source note.
-      setResponse(await gradeRecallAnswer(promptId, answer, shownQuestion));
+      // Grade the exact question the learner saw (the chosen variation), against its source note text.
+      setResponse(
+        await gradeRecallAnswerClient(
+          { question: shownQuestion, noteText: noteTextFor(prompt.sourceSlug), answer },
+          loadTutorConfig(),
+        ),
+      );
     } catch {
-      setResponse({ ok: false, code: "api", error: "Grading failed (network?). Try again." });
+      setResponse({ ok: false, code: "api", error: "Grading failed. Try again." });
     } finally {
       setPending(false);
     }
-  }, [pending, answer, promptId, shownQuestion]);
+  }, [pending, answer, promptId, prompt, shownQuestion, noteTextFor]);
 
   const poolPos = prompt ? pool.findIndex((p) => p.id === prompt.id) + 1 : 0;
 
   return (
     <div>
+      {!tutorOn && (
+        <div className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <GraduationCap className="h-4 w-4 shrink-0" />
+          The AI tutor is off. You can still browse questions;
+          <Link href="/settings" className="font-semibold underline">
+            enable it in Settings
+          </Link>
+          to grade answers and generate variations.
+        </div>
+      )}
+
       {/* Area (category) filter — focus on chosen projects, skip the niche */}
       <AreaFilter areas={areas} enabled={enabled} onToggle={toggleArea} />
 

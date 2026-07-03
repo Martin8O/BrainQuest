@@ -1,32 +1,20 @@
-// Settings page (server component). Shows where BrainQuest currently reads the vault from and lets you
-// switch it — the realistic "point at another brain" flow for a server-side app (the browser can't hand
-// the server an OS folder path, so it's enter + validate + save, not a native picker). force-dynamic so
-// it always reflects the live config. Only vault.config.json is ever written; the vault stays read-only.
-import fs from "node:fs";
-import path from "node:path";
-import { Settings as SettingsIcon, FolderTree, ShieldCheck } from "lucide-react";
-import { loadVaultConfig } from "@brainquest/core/vault/config";
-import { hasTutorApiKey } from "@brainquest/core/tutor/config";
-import SettingsClient from "./SettingsClient";
+"use client";
+
+// Settings (client). In the client-only build there's no server vault to switch — content is a compiled
+// pack loaded on the device. So this shows which pack is loaded and lets you configure the AI tutor
+// backend, which now runs entirely in the browser (your key stays on this device). Pack import from device
+// storage is the mobile shell's job (M3).
+import { Settings as SettingsIcon, Package, ShieldCheck } from "lucide-react";
 import TutorSettingsClient from "./TutorSettingsClient";
-
-export const dynamic = "force-dynamic";
-
-/** Read the vaultPath actually written in the file (vs. the effective one, which an env var can override). */
-function fileVaultPath(): string | null {
-  try {
-    const raw = JSON.parse(fs.readFileSync(path.join(process.cwd(), "vault.config.json"), "utf8"));
-    return typeof raw.vaultPath === "string" ? raw.vaultPath : null;
-  } catch {
-    return null;
-  }
-}
+import { useBrain } from "../lib/BrainProvider";
+import { PageError, PageLoading } from "../lib/PageStatus";
 
 export default function SettingsPage() {
-  const cfg = loadVaultConfig();
-  const envPath = process.env.BRAINQUEST_VAULT_PATH ?? null;
-  const inFile = fileVaultPath();
-  const tutorKeyPresent = hasTutorApiKey();
+  const { status, error, snapshot, config } = useBrain();
+  if (status === "loading") return <PageLoading label="Loading settings…" />;
+  if (status === "error" || !snapshot || !config) return <PageError error={error} />;
+
+  const { learning, concepts, harvest } = snapshot;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-5 py-10 sm:px-8 sm:py-14">
@@ -35,44 +23,33 @@ export default function SettingsPage() {
           <SettingsIcon className="h-6 w-6 text-zinc-400" strokeWidth={2} /> Settings
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Point BrainQuest at a different Obsidian brain. The vault is only ever <span className="font-medium">read</span>;
-          switching just updates <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">vault.config.json</code>.
+          BrainQuest runs entirely on your device — content is a compiled pack, progress lives locally.
         </p>
       </header>
 
-      {/* Current source */}
+      {/* Loaded content */}
       <section className="mb-8 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          <FolderTree className="h-4 w-4 text-zinc-400" strokeWidth={2} /> Current vault
+          <Package className="h-4 w-4 text-zinc-400" strokeWidth={2} /> Loaded pack
         </h2>
-        <p className="break-all font-mono text-sm">{cfg.vaultPath}</p>
+        <p className="break-all font-mono text-sm">{snapshot.vaultPath}</p>
         <div className="mt-2 text-xs text-zinc-500">
-          {envPath ? (
-            <>
-              Source: <span className="font-medium text-amber-600 dark:text-amber-400">BRAINQUEST_VAULT_PATH</span> env var
-              {" "}(overrides the config file). The file still reads{" "}
-              <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">{inFile ?? "—"}</code>.
-            </>
-          ) : (
-            <>
-              Source: <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">vault.config.json</code>. Reads{" "}
-              <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">{cfg.folders.learning}/</code> and{" "}
-              <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">{cfg.folders.concepts}/</code>.
-            </>
-          )}
+          {learning.length} learning notes · {concepts.length} concepts · {harvest.cards.length} cards ·{" "}
+          {harvest.recall.length} recall prompts.
         </div>
+        <p className="mt-2 text-xs text-zinc-500">
+          Rebuild it after editing your vault with{" "}
+          <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">npm run app:data</code>.
+        </p>
       </section>
 
-      <SettingsClient currentPath={inFile ?? cfg.vaultPath} envOverride={!!envPath} />
-
-      <TutorSettingsClient current={cfg.tutor} keyPresent={tutorKeyPresent} />
+      <TutorSettingsClient />
 
       <p className="mt-6 flex items-start gap-2 text-xs text-zinc-500">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" strokeWidth={2} />
         <span>
-          Your review progress in <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">data/</code> is untouched by a
-          switch, and the vault is never modified. API keys for a paid tutor backend belong in{" "}
-          <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">local/.env</code> — never committed.
+          Your review progress is stored in this browser (IndexedDB). Any AI-tutor API key you enter stays in this
+          browser’s local storage and is sent only to the backend you choose — never to us.
         </span>
       </p>
     </main>

@@ -1,12 +1,13 @@
-// Server-only: the ONE entry point both tutor features (grade D1, variations D2) use to get a
-// schema-shaped JSON object from the configured LLM — whichever provider is selected. It dispatches to:
-//   • ollama    → the local transport (lib/tutor/ollama.ts)
+// The ONE entry point both tutor features (grade D1, variations D2) use to get a schema-shaped JSON
+// object from the configured LLM — whichever provider is selected. It dispatches to:
+//   • ollama    → the local transport (./ollama.ts)
 //   • anthropic → the Claude Messages API, using a forced tool call for structured output
 //   • openai    → any OpenAI-compatible /chat/completions endpoint in JSON mode
-// Callers stay provider-agnostic: they pass {system, user, schema} and get back a parsed object, or one
-// of the typed errors below. Paid keys come from config (local/.env); ollama needs none.
+// Callers stay provider-agnostic: they pass {system, user, schema} + the resolved TutorConfig and get
+// back a parsed object, or one of the typed errors below. Browser-safe (fetch only, config injected —
+// no fs/env): the client passes the user's own device-stored config. Ollama needs no key.
 import { callOllamaJson, parseModelJson, OllamaOfflineError, ModelMissingError } from "./ollama";
-import { loadTutorConfig } from "./config";
+import { effectiveBaseUrl, type TutorConfig } from "./clientConfig";
 
 export { OllamaOfflineError, ModelMissingError };
 
@@ -30,16 +31,16 @@ export interface TutorCall {
   schema: unknown;
 }
 
-/** Get a schema-shaped JSON object from the configured tutor backend. */
-export async function callTutorJson(args: TutorCall): Promise<unknown> {
-  const cfg = loadTutorConfig();
+/** Get a schema-shaped JSON object from the given tutor backend config. */
+export async function callTutorJson(args: TutorCall, cfg: TutorConfig): Promise<unknown> {
+  const baseUrl = effectiveBaseUrl(cfg);
   switch (cfg.provider) {
     case "anthropic":
-      return callAnthropicJson(args, cfg.baseUrl, cfg.model, cfg.apiKey);
+      return callAnthropicJson(args, baseUrl, cfg.model, cfg.apiKey);
     case "openai":
-      return callOpenAiJson(args, cfg.baseUrl, cfg.model, cfg.apiKey);
+      return callOpenAiJson(args, baseUrl, cfg.model, cfg.apiKey);
     default:
-      return callOllamaJson(args);
+      return callOllamaJson(args, { baseUrl, model: cfg.model });
   }
 }
 
@@ -47,7 +48,14 @@ export async function callTutorJson(args: TutorCall): Promise<unknown> {
 async function callAnthropicJson(args: TutorCall, baseUrl: string, model: string, apiKey?: string): Promise<unknown> {
   if (!apiKey) throw new TutorAuthError("Anthropic");
   const res = await paidFetch(`${baseUrl}/v1/messages`, {
-    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    // `anthropic-dangerous-direct-browser-access` lets the call run from the browser (M2 is client-only);
+    // it's a no-op on the server. The key is the user's own, kept in their device storage.
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+      "content-type": "application/json",
+    },
     body: {
       model,
       max_tokens: 2048,

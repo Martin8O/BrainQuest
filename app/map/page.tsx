@@ -1,29 +1,34 @@
-// Skill-tree map page (server component). Reads the harvest (B1) + review store (B2), derives mastery
-// with computeProgress (C1), lays the concept graph out with the pure buildSkillMap (C2), and hands the
-// positioned map + a concept→cards index to the client renderer. force-dynamic because colours/locks
-// reflect the live review store. Vault stays READ-ONLY — this page only reads.
+"use client";
+
+// Skill-tree map page (client). Reads the harvest + review store from the client data layer, derives
+// mastery with computeProgress (C1), lays the concept graph out with the pure buildSkillMap (C2), and
+// hands the positioned map + a concept→cards index to the client renderer. `?focus=` (a query param, not
+// a dynamic route) opens on a concept when arriving from a session card — static-export friendly for M3.
+import { Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Network } from "lucide-react";
-import { readVault } from "@brainquest/core/vault/reader";
-import { loadReviewStore } from "@brainquest/core/srs/store";
 import { computeProgress } from "@brainquest/core/progress/mastery";
 import { buildSkillMap } from "@brainquest/core/graph/layout";
 import type { PanelCard } from "@brainquest/core/graph/types";
 import MapClient from "./MapClient";
+import { useBrain } from "../lib/BrainProvider";
+import { PageError, PageLoading } from "../lib/PageStatus";
 
-export const dynamic = "force-dynamic";
+function MapView() {
+  const { status, error, snapshot, store } = useBrain();
+  const focus = useSearchParams().get("focus");
 
-export default async function MapPage({ searchParams }: { searchParams: Promise<{ focus?: string }> }) {
-  const focus = (await searchParams).focus ?? null;
-  const vault = await readVault();
-  const store = await loadReviewStore();
-  const { concepts } = computeProgress(vault.harvest, vault.learning, store);
-  const map = buildSkillMap(vault.harvest.graph, concepts);
+  if (status === "loading") return <PageLoading label="Laying out the skill tree…" />;
+  if (status === "error" || !snapshot) return <PageError error={error} />;
+
+  const { concepts } = computeProgress(snapshot.harvest, snapshot.learning, store);
+  const map = buildSkillMap(snapshot.harvest.graph, concepts);
 
   // Index this concept's cards for the detail panel. Keyed case-insensitively, the same way C1 matches
   // a card's `→ [[concept]]` link to its concept node (Obsidian resolves wikilinks case-insensitively).
   const cardsByConcept: Record<string, PanelCard[]> = {};
-  for (const c of vault.harvest.cards) {
+  for (const c of snapshot.harvest.cards) {
     if (!c.conceptLink) continue;
     const key = c.conceptLink.toLowerCase();
     (cardsByConcept[key] ??= []).push({ id: c.id, front: c.front, back: c.back, sourceSlug: c.sourceSlug });
@@ -65,13 +70,16 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
         </span>
       </div>
 
-      {!vault.ok && (
-        <div className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-          Could not read the vault. {vault.error}
-        </div>
-      )}
-
       <MapClient map={map} cardsByConcept={cardsByConcept} initialFocus={focus} />
     </main>
+  );
+}
+
+export default function MapPage() {
+  // useSearchParams needs a Suspense boundary under static export.
+  return (
+    <Suspense fallback={<PageLoading label="Laying out the skill tree…" />}>
+      <MapView />
+    </Suspense>
   );
 }

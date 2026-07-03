@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   Brain,
@@ -15,32 +17,31 @@ import {
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
-import { readVault } from "@brainquest/core/vault/reader";
-import { loadVaultConfig, primaryHeading } from "@brainquest/core/vault/config";
+import { primaryHeading } from "@brainquest/core/vault/configTypes";
 import type { Card, ConceptNote, LearningNote } from "@brainquest/core/vault/types";
-import { loadReviewStore } from "@brainquest/core/srs/store";
 import { ensureStates, selectDue } from "@brainquest/core/srs/scheduler";
 import { computeProgress, gamificationFor } from "@brainquest/core/progress/mastery";
 import { Hud } from "./components/Hud";
-
-// Read the vault fresh on every request — it grows as Martin learns, so never prerender.
-export const dynamic = "force-dynamic";
+import { useBrain } from "./lib/BrainProvider";
+import { PageError, PageLoading } from "./lib/PageStatus";
 
 const CARD_PREVIEW_COUNT = 12;
 
-export default async function Home() {
+export default function Home() {
+  const { status, error, snapshot, config, store } = useBrain();
+  if (status === "loading") return <PageLoading label="Loading your content…" />;
+  if (status === "error" || !snapshot || !config) return <PageError error={error} />;
+
   const now = new Date();
-  const vault = await readVault();
+  const vault = snapshot;
   const { cards, recall, graph } = vault.harvest;
 
   // The headings this vault actually uses (primary alias) — shown so the labels match the user's notes,
   // English or Czech, instead of a hardcoded language.
-  const cfg = loadVaultConfig();
-  const cardsHeading = primaryHeading(cfg.harvest.cardsHeading);
-  const relatedHeading = primaryHeading(cfg.harvest.relatedHeading);
+  const cardsHeading = primaryHeading(config.harvest.cardsHeading);
+  const relatedHeading = primaryHeading(config.harvest.relatedHeading);
 
   // How many cards are due right now — drives the "start session" call to action.
-  const store = await loadReviewStore();
   const dueCount = selectDue(
     ensureStates(
       store,

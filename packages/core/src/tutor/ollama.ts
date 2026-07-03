@@ -1,9 +1,9 @@
-// Server-only: the SINGLE transport to the local Ollama server. Both the grader (D1) and the
-// question-variation generator (D2) talk to Ollama through here, so the offline / model-missing /
-// timeout handling and the structured-output (JSON schema) request shape live in ONE place instead of
-// being forked per feature. No API key, no network beyond localhost. Imported only by other server-only
-// tutor modules. The fixed seed + zero temperature make every call reproducible (the §5 fence).
-import { loadTutorConfig } from "./config";
+// The SINGLE transport to an Ollama server. Both the grader (D1) and the question-variation generator
+// (D2) talk to Ollama through here, so the offline / model-missing / timeout handling and the
+// structured-output (JSON schema) request shape live in ONE place instead of being forked per feature.
+// No API key. Browser-safe: it takes the resolved {baseUrl, model} as an argument (no fs, no env), so it
+// runs on the server OR in the client (M2). The fixed seed + zero temperature make every call
+// reproducible (the §5 fence). NOTE for the browser: Ollama must allow the app's origin via OLLAMA_ORIGINS.
 
 /** Fixed seed + zero temperature → identical input grades / generates the same way (reproducibility). */
 const SEED = 7;
@@ -54,13 +54,16 @@ export function parseModelJson(content: string): unknown {
  * @throws OllamaOfflineError when the server is down · ModelMissingError when the model isn't pulled
  *         · Error on timeout or any other request/parse failure. Callers validate the object's shape.
  */
-export async function callOllamaJson(args: {
-  system: string;
-  user: string;
-  /** JSON Schema the reply is constrained to (Ollama "structured outputs"). */
-  schema: unknown;
-}): Promise<unknown> {
-  const { baseUrl, model } = loadTutorConfig();
+export async function callOllamaJson(
+  args: {
+    system: string;
+    user: string;
+    /** JSON Schema the reply is constrained to (Ollama "structured outputs"). */
+    schema: unknown;
+  },
+  cfg: { baseUrl: string; model: string },
+): Promise<unknown> {
+  const { baseUrl, model } = cfg;
 
   let res: Response;
   try {

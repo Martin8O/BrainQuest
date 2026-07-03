@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { FloatingNav } from "./components/FloatingNav";
+import { BrainProvider } from "./lib/BrainProvider";
 
 // Runs before first paint: apply the saved theme (or fall back to the OS setting)
 // by toggling the `.dark` class on <html>, so there's no light-mode flash.
@@ -37,8 +38,10 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full flex flex-col pt-16">
-        <FloatingNav />
-        {children}
+        <BrainProvider>
+          <FloatingNav />
+          {children}
+        </BrainProvider>
       </body>
     </html>
   );

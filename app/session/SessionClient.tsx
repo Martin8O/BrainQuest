@@ -19,14 +19,16 @@ import {
   Compass,
   Loader2,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { schedule } from "@brainquest/core/srs/scheduler";
+import { computeProgress, gamificationFor } from "@brainquest/core/progress/mastery";
 import { XP_PER_REVIEW } from "@brainquest/core/gamification/engine";
 import type { Grade } from "@brainquest/core/srs/types";
 import type { GamificationState } from "@brainquest/core/gamification/types";
 import { Hud } from "../components/Hud";
 import { AreaFilter } from "../components/AreaFilter";
-import { gradeCard, getGamification, explainTerm } from "./actions";
+import { useBrain } from "../lib/BrainProvider";
+import { explainTermClient, loadTutorConfig } from "../lib/tutorClient";
 import type { SessionArea, SessionCard } from "./types";
 
 /** The four grade buttons, left→hardest to right→easiest, with their keyboard shortcut. */
@@ -60,6 +62,8 @@ export default function SessionClient({
   levelBefore: number;
   xpBefore: number;
 }) {
+  const { gradeCard, snapshot, store, noteBody } = useBrain();
+
   const filterWalk = useCallback(
     (en: Set<string>) => initialQueue.filter((c) => en.has(c.areaKey)),
     [initialQueue],
@@ -76,12 +80,22 @@ export default function SessionClient({
   const [pending, setPending] = useState(false);
   const [direction, setDirection] = useState<string | null>(null); // chosen "up next" concept, or null
   const [explain, setExplain] = useState<Explain>(NO_EXPLAIN);
-  const [gamification, setGamification] = useState<GamificationState | null>(null);
 
   const poolEmpty = walk.length === 0;
   const finished = !poolEmpty && pos >= walk.length;
   const card = poolEmpty || finished ? null : walk[pos];
   const remaining = walk.length - pos;
+
+  // Post-session XP/level/streak — computed straight from the (already-persisted) live store when the queue
+  // empties, so the celebration shows accurate, post-session numbers and can detect a level-up. No server
+  // call: grading updated the store in the client data layer, and this derives from it.
+  const gamification: GamificationState | null = useMemo(
+    () =>
+      finished && reviewed > 0 && snapshot
+        ? gamificationFor(computeProgress(snapshot.harvest, snapshot.learning, store), store, new Date())
+        : null,
+    [finished, reviewed, snapshot, store],
+  );
 
   /** Restart the walk on a (new) area selection. */
   const applyAreas = useCallback(
@@ -93,7 +107,6 @@ export default function SessionClient({
       setFlipped(false);
       setDirection(null);
       setExplain(NO_EXPLAIN);
-      setGamification(null);
     },
     [filterWalk],
   );
@@ -168,13 +181,6 @@ export default function SessionClient({
     [enabled, applyAreas],
   );
 
-  // Pull post-session XP/level/streak once the queue empties → the celebration shows real numbers.
-  useEffect(() => {
-    if (finished && reviewed > 0 && gamification === null) {
-      void getGamification().then(setGamification).catch(() => {});
-    }
-  }, [finished, reviewed, gamification]);
-
   const handleGrade = useCallback(
     async (grade: Grade) => {
       if (pending || !card) return;
@@ -206,15 +212,18 @@ export default function SessionClient({
         setPending(false);
       }
     },
-    [card, pending, direction, pos],
+    [card, pending, direction, pos, gradeCard],
   );
 
   const handleExplain = useCallback(async () => {
     if (!card || explain.loading) return;
     setExplain({ loading: true, text: null, error: null });
-    const res = await explainTerm(card.id);
+    // Ground the explanation in the card's source note text (from the pack); fall back to just the gloss.
+    const notePath = snapshot?.learning.find((n) => n.slug === card.sourceSlug)?.path;
+    const noteText = notePath ? noteBody(notePath) ?? "" : "";
+    const res = await explainTermClient({ front: card.front, back: card.back, noteText }, loadTutorConfig());
     setExplain(res.ok ? { loading: false, text: res.text, error: null } : { loading: false, text: null, error: res.error });
-  }, [card, explain.loading]);
+  }, [card, explain.loading, snapshot, noteBody]);
 
   // Keyboard: Space/Enter reveals, then 1–4 grade.
   useEffect(() => {
@@ -257,7 +266,7 @@ export default function SessionClient({
                 {card!.areaLabel}
               </span>
               <Link
-                href={`/note/${encodeURIComponent(card!.sourceSlug)}`}
+                href={`/note?slug=${encodeURIComponent(card!.sourceSlug)}`}
                 onClick={stashResume}
                 className="truncate text-zinc-500 transition hover:text-zinc-800 dark:hover:text-zinc-200"
                 title={`Read the full note: ${card!.sourceTitle}`}
@@ -335,7 +344,7 @@ export default function SessionClient({
             {flipped && (
               <div className="mt-5 flex flex-wrap justify-center gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
                 <Link
-                  href={`/note/${encodeURIComponent(card!.sourceSlug)}`}
+                  href={`/note?slug=${encodeURIComponent(card!.sourceSlug)}`}
                   onClick={stashResume}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-700"
                 >

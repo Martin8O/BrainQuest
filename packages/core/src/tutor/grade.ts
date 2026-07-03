@@ -1,13 +1,13 @@
-// Server-only: grade one free-text answer against its source note. It reads the source note (READ-ONLY —
-// never writes the vault) and asks the local model (via the shared Ollama transport) to grade the
-// learner's answer against it, constraining the reply to our JSON schema. No API key, no network beyond
-// localhost. Imported only by the "use server" tutor action.
+// Grade one free-text answer against its source note. Pure of fs/env: the caller supplies the note text
+// (from the pack) and the resolved TutorConfig, and this asks the model (via the shared transport) to
+// grade the answer against it, constraining the reply to our JSON schema. Browser-safe → the client
+// tutor calls it directly (no server action). Imported by the client tutor layer.
 import { callTutorJson, OllamaOfflineError, ModelMissingError, TutorAuthError } from "./llm";
 import { GRADE_SCHEMA, SYSTEM_PROMPT, buildUserPrompt, isVerdict } from "./prompt";
-import { readNoteBody } from "../vault/reader";
+import type { TutorConfig } from "./clientConfig";
 import type { GradeResult } from "./types";
 
-// Re-export the transport errors so existing callers (the tutor action) keep importing them from here.
+// Re-export the transport errors so callers keep importing them from here.
 export { OllamaOfflineError, ModelMissingError, TutorAuthError };
 
 /** Validate the model's JSON into a GradeResult, clamping score and defaulting arrays. */
@@ -29,22 +29,23 @@ function toGradeResult(raw: unknown): GradeResult {
 }
 
 /**
- * Grade one free-text answer against its source note via the local model.
+ * Grade one free-text answer against its source note via the configured model.
  * `question` is the exact question the learner saw — D1 passes the harvested recall prompt, D2 passes
- * the chosen difficulty variation — but the NOTE is always the single ground truth either way.
+ * the chosen difficulty variation — but the NOTE (`noteText`) is always the single ground truth either way.
  * @throws OllamaOfflineError when the server is down · ModelMissingError when the model isn't pulled
- *         · Error on any other request/parse failure.
+ *         · TutorAuthError on a bad paid key · Error on any other request/parse failure.
  */
-export async function gradeAnswer(args: {
-  question: string;
-  sourcePath: string;
-  answer: string;
-}): Promise<GradeResult> {
-  const noteText = await readNoteBody(args.sourcePath);
-  const raw = await callTutorJson({
-    system: SYSTEM_PROMPT,
-    user: buildUserPrompt(args.question, noteText, args.answer),
-    schema: GRADE_SCHEMA,
-  });
+export async function gradeAnswer(
+  args: { question: string; noteText: string; answer: string },
+  cfg: TutorConfig,
+): Promise<GradeResult> {
+  const raw = await callTutorJson(
+    {
+      system: SYSTEM_PROMPT,
+      user: buildUserPrompt(args.question, args.noteText, args.answer),
+      schema: GRADE_SCHEMA,
+    },
+    cfg,
+  );
   return toGradeResult(raw);
 }
