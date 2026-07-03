@@ -368,6 +368,14 @@ export default function MapClient({
         {detailProps ? <NodeDetail {...detailProps} /> : <Legend />}
       </aside>
 
+      {/* …on phones the sidebar is hidden, so show the legend below the map when nothing is selected
+          (when a node IS selected, the bottom sheet below replaces it). */}
+      {!detailProps && (
+        <div className="lg:hidden">
+          <Legend />
+        </div>
+      )}
+
       {/* …and a bottom sheet on phones, shown only when a node is selected. */}
       {detailProps && (
         <div className="fixed inset-x-0 bottom-0 z-30 lg:hidden">
@@ -601,7 +609,7 @@ function Legend() {
         <span className="font-medium">Unlinked</span> area holds concepts with no relations yet.
       </p>
       <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-        Drag to pan · scroll or <span className="font-medium">+ / −</span> to zoom · click a node for its cards. Dots turn
+        Drag to pan · pinch or <span className="font-medium">+ / −</span> to zoom · tap a node for its cards. Dots turn
         green as you review.
       </p>
     </div>
