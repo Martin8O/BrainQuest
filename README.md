@@ -100,8 +100,8 @@ these patterns is ignored, so the format degrades gracefully.
 ```markdown
 # Forward migration & the FSRS store          ← first H1 = the note title
 
-#learning #project/brainquest                  ← a tag line (starts with #); #project/<slug> sets the AREA
-Belongs to: [[BrainQuest]]                      ← hub link (prefix from tags.hubPrefix)
+#learning #project/brainquest                 ← a tag line (starts with #); #project/<slug> sets the AREA
+Belongs to: [[BrainQuest]]                     ← hub link (prefix from tags.hubPrefix)
 
 ## 📘 New concepts                             ← cards section (harvest.cardsHeading; aliases accepted)
 - **FSRS** (Free Spaced Repetition Scheduler) — a memory-model scheduler. → [[FSRS]]

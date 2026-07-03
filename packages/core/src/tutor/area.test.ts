@@ -8,7 +8,7 @@ import { areaForProjects, type AreaConfig } from "./area";
 const cfg: AreaConfig = {
   tags: { projectTagPrefix: "project/" },
   areas: {
-    labels: { "brainquest": "BrainQuest", example-project: "Example Project", "advanced-topic": "Advanced Topic", "advanced-topic": "RL" },
+    labels: { brainquest: "BrainQuest", example-project: "Example Project", "advanced-topic": "Advanced Topic", "advanced-topic": "RL" },
     offByDefault: ["advanced-topic"],
   },
 };
