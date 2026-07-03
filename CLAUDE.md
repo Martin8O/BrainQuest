@@ -14,8 +14,8 @@ AI-assisted software development. **Building it is itself his next learning proj
 Phase 0 done (analysis + locked design + plan). Building from **A1**. Plan: `local/all-prompts.md`.
 
 ## 3. Key paths
-- **This repo** `D:\Projekty\BrainQuest` (local folder unchanged) → GitHub
-  `https://github.com/Martin8O/BrainQuest.git` (renamed from `BrainQuest` 2026-06-24; old URL still redirects).
+- **This repo** `D:\Projekty\BrainQuest` → GitHub
+  `https://github.com/Martin8O/BrainQuest.git` (repo + local folder renamed from `BrainQuest`; old URL still redirects).
 - **`local/`** (gitignored) — the ONLY private home: Claude's memory, bootstrap, plan, prompt standard, scratch.
 - **`<vault>`** — the CONTENT SOURCE (Obsidian vault). App reads it; the teaching layer writes
   learning/concept/hub notes into it (§11) **freely — no need to ask** (Martin authorized 2026-06-22). Just
