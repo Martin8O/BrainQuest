@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Network,
   GraduationCap,
+  Library,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -22,6 +23,7 @@ const NAV: { href: string; icon: LucideIcon; label: string }[] = [
   { href: "/progress", icon: TrendingUp, label: "Progress" },
   { href: "/map", icon: Network, label: "Skill tree" },
   { href: "/tutor", icon: GraduationCap, label: "AI tutor" },
+  { href: "/packs", icon: Library, label: "Packs" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 

@@ -1,16 +1,27 @@
 // Tiny IndexedDB adapter — the client's on-device persistence (replaces the Node data/ JSON files, M2).
-// Two object stores in one database:
-//   • "kv"         — small key→value docs; holds the whole ReviewStore under the key "reviews".
+// Three object stores in one database:
+//   • "kv"         — small key→value docs; holds the pack registry (key "packRegistry") + each pack's
+//                    review store, namespaced per pack under the key "reviews:<packId>" (M4.3).
+//   • "packs"      — imported pack blobs, keyed by manifest id (M4.3). The built-in bundled pack is NOT
+//                    stored here — it is fetched fresh from /pack.json so a rebuild is picked up.
 //   • "variations" — cached tutor question ladders, keyed by recall-prompt id.
 // No external dependency: a thin promise wrapper over the raw IndexedDB API. All calls are browser-only —
 // invoke them from effects/handlers, never during render (there is no IndexedDB on the server).
 const DB_NAME = "brainquest";
-const DB_VERSION = 1;
+const DB_VERSION = 2; // v2 (M4.3) adds the "packs" store for imported pack blobs
 export const KV_STORE = "kv";
 export const VARIATIONS_STORE = "variations";
+export const PACKS_STORE = "packs";
 
-/** The review store lives under this single key in the kv store. */
-export const REVIEWS_KEY = "reviews";
+/** kv key holding the on-device pack catalogue (which packs are installed + which is active). */
+export const REGISTRY_KEY = "packRegistry";
+
+/**
+ * Legacy kv key: pre-M4.3 the app kept ONE global review store here. On first M4.3 load it is migrated
+ * into the built-in pack's namespaced key (reviewsKeyFor(builtinId)) and then removed. Kept as a constant
+ * only for that one-time migration.
+ */
+export const LEGACY_REVIEWS_KEY = "reviews";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -23,9 +34,18 @@ function openDb(): Promise<IDBDatabase> {
       const db = req.result;
       if (!db.objectStoreNames.contains(KV_STORE)) db.createObjectStore(KV_STORE);
       if (!db.objectStoreNames.contains(VARIATIONS_STORE)) db.createObjectStore(VARIATIONS_STORE);
+      if (!db.objectStoreNames.contains(PACKS_STORE)) db.createObjectStore(PACKS_STORE);
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
+    // Another tab holding an older DB version open blocks the v1→v2 upgrade; surface it instead of hanging.
+    req.onblocked = () =>
+      reject(new Error("Storage upgrade is blocked by another open tab. Close other BrainQuest tabs and reload."));
+  }).catch((err) => {
+    // Never cache a REJECTED open — a transient failure (blocked upgrade, etc.) would otherwise brick every
+    // later idbGet/idbSet for the tab. Clear the cache so the next call retries a fresh open.
+    dbPromise = null;
+    throw err;
   });
   return dbPromise;
 }
@@ -65,4 +85,9 @@ export function idbGet<T>(store: string, key: IDBValidKey): Promise<T | undefine
 /** Write a value at key. */
 export async function idbSet(store: string, key: IDBValidKey, value: unknown): Promise<void> {
   await withStore(store, "readwrite", (s) => s.put(value, key));
+}
+
+/** Delete the value at key (no-op if absent). */
+export async function idbDelete(store: string, key: IDBValidKey): Promise<void> {
+  await withStore(store, "readwrite", (s) => s.delete(key));
 }

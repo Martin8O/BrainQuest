@@ -1,16 +1,17 @@
 "use client";
 
 // Settings (client). In the client-only build there's no server vault to switch — content is a compiled
-// pack loaded on the device. So this shows which pack is loaded and lets you configure the AI tutor
-// backend, which now runs entirely in the browser (your key stays on this device). Pack import from device
-// storage is the mobile shell's job (M3).
-import { Settings as SettingsIcon, Package, ShieldCheck } from "lucide-react";
+// pack loaded on the device. So this shows which pack is active and lets you configure the AI tutor
+// backend, which now runs entirely in the browser (your key stays on this device). Importing and switching
+// packs lives on the Packs page (M4.3).
+import Link from "next/link";
+import { Settings as SettingsIcon, Package, ShieldCheck, Library } from "lucide-react";
 import TutorSettingsClient from "./TutorSettingsClient";
 import { useBrain } from "../lib/BrainProvider";
 import { PageError, PageLoading } from "../lib/PageStatus";
 
 export default function SettingsPage() {
-  const { status, error, snapshot, config } = useBrain();
+  const { status, error, snapshot, config, manifest } = useBrain();
   if (status === "loading") return <PageLoading label="Loading settings…" />;
   if (status === "error" || !snapshot || !config) return <PageError error={error} />;
 
@@ -27,20 +28,22 @@ export default function SettingsPage() {
         </p>
       </header>
 
-      {/* Loaded content */}
+      {/* Active pack */}
       <section className="mb-8 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          <Package className="h-4 w-4 text-zinc-400" strokeWidth={2} /> Loaded pack
+          <Package className="h-4 w-4 text-zinc-400" strokeWidth={2} /> Active pack
         </h2>
-        <p className="break-all font-mono text-sm">{snapshot.vaultPath}</p>
+        <p className="font-medium">{manifest?.name ?? snapshot.vaultPath}</p>
         <div className="mt-2 text-xs text-zinc-500">
           {learning.length} learning notes · {concepts.length} concepts · {harvest.cards.length} cards ·{" "}
           {harvest.recall.length} recall prompts.
         </div>
-        <p className="mt-2 text-xs text-zinc-500">
-          Rebuild it after editing your vault with{" "}
-          <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">npm run app:data</code>.
-        </p>
+        <Link
+          href="/packs"
+          className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+        >
+          <Library className="h-4 w-4" /> Import or switch packs
+        </Link>
       </section>
 
       <TutorSettingsClient />
