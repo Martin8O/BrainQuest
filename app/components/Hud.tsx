@@ -12,7 +12,7 @@ function intensity(count: number): number {
 export function Hud({ g, className = "" }: { g: GamificationState; className?: string }) {
   return (
     <div
-      className={`flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white/70 p-5 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/60 sm:flex-row sm:items-center sm:justify-between ${className}`}
+      className={`bq-card bq-topline relative flex flex-col gap-4 overflow-hidden rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between ${className}`}
     >
       <LevelBlock g={g} />
       <StreakBlock g={g} />
@@ -37,7 +37,7 @@ function LevelBlock({ g }: { g: GamificationState }) {
             {level.isMax ? `${g.xp} XP · MAX` : `${level.xpIntoLevel} / ${level.xpForLevel} XP`}
           </span>
         </div>
-        <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+        <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-zinc-900/10 shadow-inner dark:bg-white/10">
           <div className="xp-fill h-full rounded-full" style={{ width: `${Math.round(level.progress * 100)}%` }} />
         </div>
         <div className="mt-1 text-xs text-zinc-500">
@@ -81,9 +81,11 @@ function ActivityStrip({ g }: { g: GamificationState }) {
         return (
           <div
             key={d.date}
-            className={`w-[6px] rounded-sm ${
-              d.count > 0 ? "bg-violet-500" : "bg-zinc-200 dark:bg-zinc-800"
-            } ${d.isToday ? "ring-1 ring-fuchsia-400" : ""}`}
+            className={`w-[6px] rounded-full transition-colors ${
+              d.count > 0
+                ? "bg-gradient-to-t from-indigo-500 to-fuchsia-400 shadow-[0_0_6px_-1px_rgba(139,92,246,0.6)]"
+                : "bg-zinc-900/10 dark:bg-white/10"
+            } ${d.isToday ? "ring-1 ring-fuchsia-400/80" : ""}`}
             style={{ height: `${d.count > 0 ? h : 6}px` }}
             title={`${d.date}: ${d.count} review${d.count === 1 ? "" : "s"}`}
           />

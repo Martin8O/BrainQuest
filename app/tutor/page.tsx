@@ -53,8 +53,11 @@ function TutorView() {
   return (
     <main className="mx-auto w-full max-w-2xl px-5 py-10 sm:px-8 sm:py-14">
       <header className="mb-6">
-        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-          <GraduationCap className="h-6 w-6 text-fuchsia-500" strokeWidth={2} /> AI tutor
+        <h1 className="flex items-center gap-2.5 text-2xl font-bold tracking-tight sm:text-3xl">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-pink-600 text-white shadow-md shadow-fuchsia-500/30">
+            <GraduationCap className="h-5 w-5" strokeWidth={2} />
+          </span>
+          AI tutor
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
           Answer a recall question in your own words — the AI varies it by difficulty (calibrated to your level),
@@ -63,12 +66,12 @@ function TutorView() {
       </header>
 
       {prompts.length === 0 ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="bq-card rounded-2xl p-8 text-center">
           <div className="text-4xl">🤔</div>
           <h2 className="mt-3 text-xl font-semibold">No recall prompts yet</h2>
           <p className="mt-2 text-zinc-600 dark:text-zinc-400">
             Add a recall-prompt section to a note and rebuild the pack
-            (<code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">npm run app:data</code>).
+            (<code className="rounded bg-zinc-900/5 px-1 dark:bg-white/10">npm run app:data</code>).
           </p>
         </div>
       ) : (

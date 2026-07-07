@@ -34,10 +34,10 @@ export function AreaFilter({
               aria-pressed={on}
               title={on ? `${a.label} — on (click to turn off)` : `${a.label} — off (click to turn on)`}
               className={[
-                "rounded-full px-2.5 py-1 text-xs font-medium transition",
+                "rounded-full px-2.5 py-1 text-xs font-medium transition duration-200",
                 on
-                  ? "bg-indigo-600 text-white"
-                  : "bg-zinc-100 text-zinc-400 line-through hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-500 dark:hover:bg-zinc-700",
+                  ? "bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-sm shadow-indigo-500/30"
+                  : "bg-zinc-900/5 text-zinc-400 line-through hover:bg-zinc-900/10 hover:text-zinc-500 dark:bg-white/5 dark:text-zinc-500 dark:hover:bg-white/10",
               ].join(" ")}
             >
               {a.label} <span className="tabular-nums opacity-70">{a.count}</span>

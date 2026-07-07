@@ -36,7 +36,7 @@ export function FloatingNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed left-1/2 top-3 z-50 flex -translate-x-1/2 items-center gap-0.5 rounded-full border border-zinc-200/80 bg-white/80 px-1.5 py-1.5 shadow-lg shadow-zinc-900/5 backdrop-blur-md dark:border-zinc-700/70 dark:bg-zinc-900/80"
+      className="fixed left-1/2 top-3 z-50 flex -translate-x-1/2 items-center gap-0.5 rounded-full border border-zinc-200/70 bg-white/70 px-1.5 py-1.5 shadow-xl shadow-indigo-900/[0.07] ring-1 ring-white/60 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-900/70 dark:shadow-black/40 dark:ring-white/5"
     >
       {NAV.map(({ href, icon: Icon, label }) => {
         const active = isActive(pathname, href);
@@ -46,20 +46,20 @@ export function FloatingNav() {
             href={href}
             aria-label={label}
             aria-current={active ? "page" : undefined}
-            className={`group relative grid h-9 w-9 place-items-center rounded-full transition ${
+            className={`group relative grid h-9 w-9 place-items-center rounded-full transition duration-200 ${
               active
-                ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                ? "bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-500/40"
+                : "text-zinc-500 hover:scale-105 hover:bg-zinc-900/5 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
             }`}
           >
             <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
-            <span className="pointer-events-none absolute top-11 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-900 px-2 py-1 text-xs text-white opacity-0 shadow-md transition group-hover:opacity-100 dark:bg-white dark:text-zinc-900">
+            <span className="pointer-events-none absolute top-11 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-zinc-700/50 bg-zinc-900/95 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg backdrop-blur transition group-hover:opacity-100 dark:border-white/15 dark:bg-zinc-800/95">
               {label}
             </span>
           </Link>
         );
       })}
-      <span className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
+      <span className="mx-1 h-5 w-px bg-zinc-900/10 dark:bg-white/10" aria-hidden />
       <ThemeToggle />
     </nav>
   );

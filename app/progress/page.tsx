@@ -14,10 +14,10 @@ import { PageError, PageLoading } from "../lib/PageStatus";
  * colours follow the same gradual ramp as the skill-tree map: grey → orange → yellow → green.
  */
 const LEVELS: Record<MasteryLevel, { label: string; chip: string; dot: string }> = {
-  mastered: { label: "Mastered", chip: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300", dot: "bg-green-500" },
-  young: { label: "Almost", chip: "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300", dot: "bg-yellow-400" },
-  learning: { label: "Learning", chip: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300", dot: "bg-orange-500" },
-  untouched: { label: "Not started", chip: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400", dot: "bg-slate-400" },
+  mastered: { label: "Mastered", chip: "bg-green-500/12 text-green-700 ring-1 ring-green-500/25 dark:bg-green-400/10 dark:text-green-300 dark:ring-green-400/25", dot: "bg-green-500" },
+  young: { label: "Almost", chip: "bg-yellow-500/12 text-yellow-700 ring-1 ring-yellow-500/25 dark:bg-yellow-400/10 dark:text-yellow-300 dark:ring-yellow-400/25", dot: "bg-yellow-400" },
+  learning: { label: "Learning", chip: "bg-orange-500/12 text-orange-700 ring-1 ring-orange-500/25 dark:bg-orange-400/10 dark:text-orange-300 dark:ring-orange-400/25", dot: "bg-orange-500" },
+  untouched: { label: "Not started", chip: "bg-slate-500/10 text-slate-500 ring-1 ring-slate-500/20 dark:bg-slate-400/10 dark:text-slate-400 dark:ring-slate-400/20", dot: "bg-slate-400" },
 };
 
 const LEVEL_ORDER: MasteryLevel[] = ["mastered", "young", "learning", "untouched"];
@@ -41,18 +41,21 @@ export default function ProgressPage() {
   return (
     <main className="mx-auto w-full max-w-4xl px-5 py-10 sm:px-8 sm:py-14">
       <header className="mb-8">
-        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-          <TrendingUp className="h-6 w-6 text-emerald-500" strokeWidth={2} /> Progress
+        <h1 className="flex items-center gap-2.5 text-2xl font-bold tracking-tight sm:text-3xl">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/30">
+            <TrendingUp className="h-5 w-5" strokeWidth={2} />
+          </span>
+          Progress
         </h1>
         <p className="mt-1 text-sm text-zinc-500">How much you know vs. what&apos;s still ahead — grows as your vault does.</p>
       </header>
 
       {/* Overall */}
-      <section className="mb-10 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className="bq-card bq-topline relative mb-10 overflow-hidden rounded-2xl p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <div className="text-4xl font-bold tabular-nums">{pct(overall.avgStrength)}%</div>
-            <div className="mt-0.5 text-sm text-zinc-500">overall mastery</div>
+            <div className="text-gradient text-5xl font-extrabold tabular-nums">{pct(overall.avgStrength)}%</div>
+            <div className="mt-1 text-sm text-zinc-500">overall mastery</div>
           </div>
           <div className="text-right text-sm text-zinc-500">
             {overall.reviewedCards} / {overall.totalCards} cards reviewed
@@ -139,9 +142,15 @@ function StrengthBar({
   const greenFrac = total === 0 ? 0 : buckets.mature / total;
   const orangeFrac = Math.max(0, avgStrength - greenFrac); // learning cards' strength share
   return (
-    <div className="mt-4 flex h-2.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-      <div className="h-full bg-green-500" style={{ width: `${greenFrac * 100}%` }} />
-      <div className="h-full bg-orange-500" style={{ width: `${orangeFrac * 100}%` }} />
+    <div className="mt-4 flex h-2.5 w-full overflow-hidden rounded-full bg-zinc-900/10 shadow-inner dark:bg-white/10">
+      <div
+        className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500"
+        style={{ width: `${greenFrac * 100}%` }}
+      />
+      <div
+        className="h-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-500"
+        style={{ width: `${orangeFrac * 100}%` }}
+      />
     </div>
   );
 }
@@ -160,7 +169,7 @@ function ConceptChip({ concept }: { concept: ConceptMastery }) {
 
 function ClusterRow({ cluster }: { cluster: ClusterProgress }) {
   return (
-    <li className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+    <li className="rounded-xl border border-zinc-200/80 bg-white/70 p-3 shadow-sm transition duration-200 hover:border-zinc-300 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-white/20">
       <div className="flex items-baseline justify-between gap-3">
         <span className="min-w-0 truncate text-sm font-medium">{cluster.title}</span>
         <span className="shrink-0 text-xs tabular-nums text-zinc-500">

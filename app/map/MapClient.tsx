@@ -238,10 +238,10 @@ export default function MapClient({
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       {/* Canvas */}
-      <div className="relative flex-1 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="relative flex-1 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/55 shadow-lg shadow-zinc-900/5 dark:border-white/10 dark:bg-zinc-950/55 dark:shadow-black/30">
         {/* Toolbar */}
         <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
-          <label className="hidden cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white/90 px-2 py-1 text-xs text-zinc-600 backdrop-blur sm:flex dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-300">
+          <label className="hidden cursor-pointer items-center gap-1.5 rounded-xl border border-zinc-200/80 bg-white/85 px-2.5 py-1.5 text-xs font-medium text-zinc-600 shadow-sm backdrop-blur-md sm:flex dark:border-white/10 dark:bg-zinc-900/85 dark:text-zinc-300">
             <input
               type="checkbox"
               checked={showLabels}
@@ -250,7 +250,7 @@ export default function MapClient({
             />
             Labels
           </label>
-          <div className="flex overflow-hidden rounded-lg border border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/90">
+          <div className="flex overflow-hidden rounded-xl border border-zinc-200/80 bg-white/85 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/85">
             <ToolBtn onClick={() => zoomBy(1 / 1.25)} label="Zoom out">
               −
             </ToolBtn>
@@ -380,10 +380,10 @@ export default function MapClient({
       {detailProps && (
         <div className="fixed inset-x-0 bottom-0 z-30 lg:hidden">
           <div
-            className="mx-auto max-h-[62vh] max-w-2xl overflow-y-auto rounded-t-2xl border-t border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
+            className="mx-auto max-h-[62vh] max-w-2xl overflow-y-auto rounded-t-3xl border-t border-zinc-200/80 bg-white/90 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-zinc-900/90"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            <div className="sticky top-0 flex justify-center bg-white pt-2 pb-1 dark:bg-zinc-900">
+            <div className="sticky top-0 flex justify-center pt-2 pb-1">
               <span className="h-1.5 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600" aria-hidden />
             </div>
             <NodeDetail {...detailProps} bare />
@@ -401,7 +401,7 @@ function ToolBtn({ children, onClick, label }: { children: React.ReactNode; onCl
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="px-3.5 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+      className="px-3.5 py-2 text-sm font-medium text-zinc-600 transition hover:bg-indigo-500/10 hover:text-indigo-600 dark:text-zinc-300 dark:hover:bg-indigo-400/15 dark:hover:text-indigo-300"
     >
       {children}
     </button>
@@ -502,7 +502,7 @@ function NodeDetail({
 }) {
   const notes = [...new Set(cards.map((c) => c.sourceSlug))];
   return (
-    <div className={bare ? "px-5 pb-5 pt-1" : "rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"}>
+    <div className={bare ? "px-5 pb-5 pt-1" : "bq-card rounded-2xl p-5"}>
       <div className="mb-3 flex items-start justify-between gap-2">
         <h2 className="text-lg font-semibold leading-tight">{node.concept}</h2>
         <button
@@ -516,17 +516,17 @@ function NodeDetail({
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2 py-1 dark:bg-zinc-800">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900/5 px-2 py-1 dark:bg-white/10">
           <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: LEVEL[node.level].fill }} />
           {LEVEL[node.level].label}
         </span>
         {node.cardCount > 0 && (
-          <span className="rounded-full bg-zinc-100 px-2 py-1 tabular-nums dark:bg-zinc-800">
+          <span className="rounded-full bg-zinc-900/5 px-2 py-1 tabular-nums dark:bg-white/10">
             {pct(node.avgStrength)}% · {node.cardCount} {node.cardCount === 1 ? "card" : "cards"}
           </span>
         )}
         {node.locked && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-zinc-500 dark:bg-zinc-800" title="All neighbours are still untouched">
+          <span className="inline-flex items-center gap-1 rounded-full bg-zinc-900/5 px-2 py-1 text-zinc-500 dark:bg-white/10" title="All neighbours are still untouched">
             <Lock className="h-3 w-3" /> Locked
           </span>
         )}
@@ -541,7 +541,7 @@ function NodeDetail({
                 key={r}
                 type="button"
                 onClick={() => onPick(r)}
-                className="rounded-full border border-zinc-200 px-2 py-0.5 text-xs text-zinc-600 hover:border-indigo-400 hover:text-indigo-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-indigo-500"
+                className="rounded-full border border-zinc-200/90 bg-white/50 px-2 py-0.5 text-xs text-zinc-600 transition hover:border-indigo-400 hover:bg-indigo-500/10 hover:text-indigo-600 dark:border-white/15 dark:bg-white/5 dark:text-zinc-300 dark:hover:border-indigo-400/60 dark:hover:text-indigo-300"
               >
                 {r}
               </button>
@@ -559,7 +559,7 @@ function NodeDetail({
         ) : (
           <ul className="max-h-72 space-y-2 overflow-y-auto pr-1">
             {cards.map((c) => (
-              <li key={c.id} className="rounded-lg border border-zinc-200 p-2.5 dark:border-zinc-800">
+              <li key={c.id} className="rounded-lg border border-zinc-200/80 bg-white/40 p-2.5 dark:border-white/10 dark:bg-white/[0.03]">
                 <div className="text-sm font-medium">{c.front}</div>
                 <p className="mt-0.5 line-clamp-3 text-xs text-zinc-500">{c.back}</p>
               </li>
@@ -578,7 +578,7 @@ function NodeDetail({
 
 function Legend() {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="bq-card rounded-2xl p-5">
       <h2 className="mb-3 text-sm font-semibold">Legend</h2>
       <ul className="space-y-2 text-sm">
         {(["mastered", "young", "learning", "untouched"] as MasteryLevel[]).map((lvl) => (

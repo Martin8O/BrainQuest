@@ -20,8 +20,11 @@ export default function SettingsPage() {
   return (
     <main className="mx-auto w-full max-w-2xl px-5 py-10 sm:px-8 sm:py-14">
       <header className="mb-8">
-        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-          <SettingsIcon className="h-6 w-6 text-zinc-400" strokeWidth={2} /> Settings
+        <h1 className="flex items-center gap-2.5 text-2xl font-bold tracking-tight sm:text-3xl">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-slate-500 to-zinc-600 text-white shadow-md shadow-slate-500/30">
+            <SettingsIcon className="h-5 w-5" strokeWidth={2} />
+          </span>
+          Settings
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
           BrainQuest runs entirely on your device — content is a compiled pack, progress lives locally.
@@ -29,7 +32,7 @@ export default function SettingsPage() {
       </header>
 
       {/* Active pack */}
-      <section className="mb-8 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className="bq-card mb-8 rounded-2xl p-5">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
           <Package className="h-4 w-4 text-zinc-400" strokeWidth={2} /> Active pack
         </h2>

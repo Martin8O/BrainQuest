@@ -7,8 +7,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f8fc;
+  --foreground: #18181b;
 }
 
 @theme inline {
@@ -19,8 +19,8 @@
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #09090c;
+  --foreground: #f4f4f5;
 }
 
 /* ── Mobile shell safe areas (M3 / Capacitor) ────────────────────────────────
@@ -46,27 +46,56 @@ nav[aria-label="Primary"] {
   --accent-1: #6366f1; /* indigo  */
   --accent-2: #8b5cf6; /* violet  */
   --accent-3: #d946ef; /* fuchsia */
-  --xp-gradient: linear-gradient(90deg, var(--accent-1), var(--accent-2), var(--accent-3));
+  --xp-gradient: linear-gradient(90deg, var(--accent-1), var(--accent-2), var(--accent-3), var(--accent-2), var(--accent-1));
   --streak: #f59e0b; /* amber flame */
 }
 
-/* Ambient backdrop so it isn't a bare wall — painted on the body and pinned (background-attachment: fixed)
-   so it stays put behind scrolling content. Light: a faint indigo glow up top + a barely-there dot grid.
-   Dark (below): two soft aurora glows + a light scatter of stars. */
+/* ── Base typography ────────────────────────────────────────────────────────
+   Geist (loaded via next/font in the layout) with system fallbacks, plus a few
+   quiet refinements: balanced headings, tinted selection, thin scrollbars. */
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
   background-attachment: fixed;
   /* Day sky: blue daylight glow up top, a warm sun in the corner, soft haze, faint dot texture. */
-  background-repeat: no-repeat, no-repeat, no-repeat, repeat;
-  background-size: 100% 100%, 100% 100%, 100% 100%, 22px 22px;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 22px 22px;
   background-image:
-    radial-gradient(62rem 42rem at 50% -22%, rgba(56, 189, 248, 0.13), transparent 70%),
-    radial-gradient(34rem 30rem at 88% 4%, rgba(250, 204, 21, 0.13), transparent 66%),
-    radial-gradient(36rem 28rem at 10% 104%, rgba(125, 211, 252, 0.1), transparent 70%),
-    radial-gradient(circle at 1px 1px, rgba(24, 24, 27, 0.03) 1px, transparent 0);
+    radial-gradient(62rem 42rem at 50% -22%, rgba(56, 189, 248, 0.14), transparent 70%),
+    radial-gradient(34rem 30rem at 88% 4%, rgba(250, 204, 21, 0.14), transparent 66%),
+    radial-gradient(36rem 28rem at 10% 104%, rgba(125, 211, 252, 0.11), transparent 70%),
+    radial-gradient(40rem 30rem at 92% 96%, rgba(139, 92, 246, 0.07), transparent 70%),
+    radial-gradient(circle at 1px 1px, rgba(24, 24, 27, 0.035) 1px, transparent 0);
 }
+h1, h2, h3 {
+  text-wrap: balance;
+  letter-spacing: -0.015em;
+}
+::selection {
+  background: rgba(139, 92, 246, 0.28);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(113, 113, 122, 0.4) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(113, 113, 122, 0.35);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+:focus-visible {
+  outline: 2px solid var(--accent-1);
+  outline-offset: 2px;
+}
+
 .dark body {
   background-repeat: no-repeat;
   background-size: auto;
@@ -100,22 +129,126 @@ body {
     radial-gradient(1px 1px at 97% 52%, rgba(255, 255, 255, 0.55), transparent 100%),
     radial-gradient(1.5px 1.5px at 3% 30%, rgba(255, 255, 255, 0.6), transparent 100%),
     radial-gradient(1px 1px at 19% 8%, rgba(255, 255, 255, 0.5), transparent 100%),
-    radial-gradient(42rem 30rem at 82% -10%, rgba(139, 92, 246, 0.18), transparent 70%),
-    radial-gradient(36rem 32rem at 8% 108%, rgba(99, 102, 241, 0.14), transparent 70%),
-    radial-gradient(34rem 28rem at 50% 48%, rgba(56, 89, 220, 0.08), transparent 70%),
-    radial-gradient(26rem 22rem at 28% 16%, rgba(217, 70, 239, 0.07), transparent 70%);
+    radial-gradient(42rem 30rem at 82% -10%, rgba(139, 92, 246, 0.2), transparent 70%),
+    radial-gradient(36rem 32rem at 8% 108%, rgba(99, 102, 241, 0.16), transparent 70%),
+    radial-gradient(34rem 28rem at 50% 48%, rgba(56, 89, 220, 0.09), transparent 70%),
+    radial-gradient(26rem 22rem at 28% 16%, rgba(217, 70, 239, 0.08), transparent 70%);
 }
 
-/* The XP bar fill — gradient + a smooth grow when the value changes. */
+/* ── Surfaces ────────────────────────────────────────────────────────────────
+   `.bq-card` is the app's standard "major surface": frosted glass over the
+   ambient backdrop, a hairline border and a soft layered shadow. Use it for
+   the big panels (HUD, flashcard, section cards) — NOT for long lists of small
+   items, where per-element backdrop blur would get expensive; those use plain
+   translucent Tailwind backgrounds instead. */
+.bq-card {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(228, 228, 231, 0.9);
+  box-shadow:
+    0 1px 2px rgba(24, 24, 27, 0.04),
+    0 12px 32px -16px rgba(24, 24, 27, 0.14);
+}
+.dark .bq-card {
+  background: rgba(24, 24, 27, 0.58);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 16px 40px -20px rgba(0, 0, 0, 0.6);
+}
+
+/* Interactive lift for cards that are links/buttons. */
+.bq-lift {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms, border-color 200ms, background-color 200ms;
+}
+.bq-lift:hover {
+  transform: translateY(-2px);
+}
+.bq-lift:active {
+  transform: translateY(0);
+}
+
+/* A gradient hairline across the top edge of a feature card (parent needs
+   `relative overflow-hidden`). */
+.bq-topline::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-1), var(--accent-2), var(--accent-3), transparent);
+  opacity: 0.8;
+}
+
+/* The brand gradient, as text. */
+.text-gradient {
+  background: linear-gradient(100deg, var(--accent-1), var(--accent-2) 55%, var(--accent-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Primary CTA — the one loud button style, shared app-wide. */
+.btn-primary {
+  color: #fff;
+  background-image: linear-gradient(135deg, var(--accent-1), var(--accent-2) 60%, var(--accent-3));
+  background-size: 150% 150%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 6px 20px -8px color-mix(in srgb, var(--accent-2) 70%, transparent);
+  transition: background-position 300ms, box-shadow 200ms, transform 150ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms;
+}
+.btn-primary:hover:not(:disabled) {
+  background-position: 100% 100%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 8px 26px -8px color-mix(in srgb, var(--accent-2) 85%, transparent);
+  transform: translateY(-1px);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+/* Page-enter: content drifts up and fades in once per navigation. `backwards`
+   (never `forwards`) so no transform persists after it ends — a lingering
+   transform on <main> would re-anchor `position: fixed` children (the map's
+   bottom sheet) to the page instead of the viewport. */
+main {
+  animation: page-in 480ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+@keyframes page-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* The XP bar fill — a slowly drifting gradient + a smooth grow when the value changes. */
 .xp-fill {
   background: var(--xp-gradient);
+  background-size: 220% 100%;
+  animation: xp-sheen 6s linear infinite;
+  box-shadow: 0 0 10px -2px color-mix(in srgb, var(--accent-2) 60%, transparent);
   transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+@keyframes xp-sheen {
+  to {
+    background-position: -220% 0;
+  }
+}
 
-/* Level badge: a small gem with the accent gradient. */
+/* Level badge: a small gem with the accent gradient + a glassy top shine. */
 .level-gem {
-  background: var(--xp-gradient);
-  box-shadow: 0 2px 12px -2px var(--accent-2);
+  background-image: linear-gradient(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 45%),
+    linear-gradient(135deg, var(--accent-1), var(--accent-2) 60%, var(--accent-3));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 4px 16px -4px color-mix(in srgb, var(--accent-2) 60%, transparent);
 }
 
 /* The streak flame, lit vs. at-risk (idle today). */
@@ -160,5 +293,11 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .xp-fill, .flame-lit, .unlock-pop, .halo, .reveal-in { animation: none; transition: none; }
+  main, .xp-fill, .flame-lit, .unlock-pop, .halo, .reveal-in, .btn-primary, .bq-lift {
+    animation: none;
+    transition: none;
+  }
+  .bq-lift:hover {
+    transform: none;
+  }
 }

@@ -104,7 +104,11 @@ export default function TutorClient({
   const prompt: TutorPrompt | undefined = pool.find((p) => p.id === currentId) ?? pool[0];
   const promptId = prompt?.id;
 
-  const ready = ladderData?.promptId === promptId; // data we hold is for THIS prompt, not a stale one
+  // Data we hold is for THIS prompt (not a stale one) AND we actually have data. The `!= null` guard is
+  // load-bearing: with an empty pool `promptId` is undefined, and `ladderData?.promptId` is also undefined
+  // when nothing loaded yet — so a bare `===` would spuriously read true and the `ladderData!` below would
+  // dereference null. Requiring `ladderData != null` keeps `ready` false until a ladder genuinely lands.
+  const ready = ladderData != null && ladderData.promptId === promptId;
   const ladder = ready ? ladderData!.ladder : null;
   const ladderNote = ready ? ladderData!.note : null;
   const ladderLoading = !!promptId && !ready; // until the current prompt's ladder lands, we're (re)generating
@@ -221,7 +225,7 @@ export default function TutorClient({
   return (
     <div>
       {!tutorOn && (
-        <div className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+        <div className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber-300/70 bg-amber-50/80 p-3 text-sm text-amber-900 backdrop-blur dark:border-amber-500/30 dark:bg-amber-950/50 dark:text-amber-200">
           <GraduationCap className="h-4 w-4 shrink-0" />
           The AI tutor is off. You can still browse questions;
           <Link href="/settings" className="font-semibold underline">
@@ -235,7 +239,7 @@ export default function TutorClient({
       <AreaFilter areas={areas} enabled={enabled} onToggle={toggleArea} />
 
       {!prompt ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="bq-card rounded-2xl p-8 text-center">
           <div className="text-3xl">🗂️</div>
           <p className="mt-3 text-zinc-600 dark:text-zinc-400">Turn on at least one area above to get questions.</p>
         </div>
@@ -244,7 +248,7 @@ export default function TutorClient({
           {/* Provenance + cycle */}
           <div className="mb-2 flex items-center justify-between text-xs text-zinc-500">
             <span>
-              <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+              <span className="rounded-full bg-fuchsia-500/10 px-2 py-0.5 font-medium text-fuchsia-600 dark:bg-fuchsia-400/15 dark:text-fuchsia-300">
                 {prompt.areaLabel}
               </span>{" "}
               <span className="font-mono">{prompt.sourceSlug}</span>
@@ -258,7 +262,7 @@ export default function TutorClient({
           <LadderBar ladder={ladder} level={level} loading={ladderLoading} note={ladderNote} onPick={pickLevel} />
 
           {/* The question */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
+          <div className="bq-card bq-topline relative overflow-hidden rounded-3xl p-6 sm:p-8">
             <div className="text-lg font-semibold sm:text-xl">{shownQuestion}</div>
 
             <textarea
@@ -273,22 +277,22 @@ export default function TutorClient({
               disabled={pending}
               rows={5}
               placeholder="Answer in your own words…"
-              className="mt-4 w-full resize-y rounded-xl border border-zinc-300 bg-white p-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-indigo-900"
+              className="mt-4 w-full resize-y rounded-xl border border-zinc-300/80 bg-white/80 p-3 text-sm shadow-inner outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 disabled:opacity-50 dark:border-white/15 dark:bg-zinc-950/60 dark:focus:border-indigo-400/60 dark:focus:ring-indigo-400/25"
             />
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
                 onClick={() => void submit()}
                 disabled={pending || !answer.trim()}
-                className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50"
+                className="btn-primary rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
               >
                 {pending ? "Grading…" : "Grade answer"}
-                {!pending && <span className="ml-1 opacity-60">(⌘/Ctrl+↵)</span>}
+                {!pending && <span className="ml-1 opacity-70">(⌘/Ctrl+↵)</span>}
               </button>
               <button
                 onClick={nextPrompt}
                 disabled={pending}
-                className="text-sm text-zinc-500 underline hover:text-zinc-700 disabled:opacity-50 dark:hover:text-zinc-300"
+                className="text-sm text-zinc-500 underline underline-offset-4 transition hover:text-zinc-700 disabled:opacity-50 dark:hover:text-zinc-300"
               >
                 Next question →
               </button>
@@ -297,7 +301,7 @@ export default function TutorClient({
 
           {/* The grade */}
           {response && !response.ok && (
-            <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+            <div className="mt-5 rounded-xl border border-amber-300/70 bg-amber-50/80 p-4 text-sm text-amber-900 backdrop-blur dark:border-amber-500/30 dark:bg-amber-950/50 dark:text-amber-200">
               {response.error}
             </div>
           )}
@@ -310,7 +314,7 @@ export default function TutorClient({
         <div className="mt-6 text-center">
           <Link
             href="/session"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold"
           >
             <ArrowLeft className="h-4 w-4" /> Back to session
           </Link>
@@ -366,11 +370,11 @@ function LadderBar({
               onClick={() => onPick(v.level)}
               title={v.label.toLowerCase() === v.bloom ? `${v.level}. ${v.label}` : `${v.level}. ${v.label} (${v.bloom})`}
               className={[
-                "rounded-full px-2.5 py-1 text-xs font-medium transition",
+                "rounded-full px-2.5 py-1 text-xs font-medium transition duration-200",
                 selected
-                  ? "bg-indigo-600 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700",
-                !selected && isStart ? "ring-2 ring-indigo-300 dark:ring-indigo-700" : "",
+                  ? "bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-sm shadow-indigo-500/30"
+                  : "bg-zinc-900/5 text-zinc-600 hover:bg-zinc-900/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10",
+                !selected && isStart ? "ring-2 ring-indigo-400/50 dark:ring-indigo-400/40" : "",
               ].join(" ")}
             >
               <span className="tabular-nums opacity-70">{v.level}.</span> {v.label}
@@ -389,13 +393,13 @@ function LadderBar({
 function GradeCard({ result }: { result: GradeResult }) {
   const v = VERDICT[result.verdict];
   return (
-    <div className="mt-5 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="bq-card reveal-in mt-5 rounded-2xl p-6">
       <div className="flex items-center justify-between gap-3">
-        <span className={`rounded-full px-3 py-1 text-sm font-semibold ${v.badge}`}>{v.label}</span>
-        <span className="text-sm tabular-nums text-zinc-500">{result.score} / 100</span>
+        <span className={`rounded-full px-3 py-1 text-sm font-semibold shadow-sm ${v.badge}`}>{v.label}</span>
+        <span className="text-sm font-medium tabular-nums text-zinc-500">{result.score} / 100</span>
       </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-        <div className={`h-full rounded-full ${v.bar} transition-all`} style={{ width: `${result.score}%` }} />
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-900/10 shadow-inner dark:bg-white/10">
+        <div className={`h-full rounded-full ${v.bar} transition-all duration-700`} style={{ width: `${result.score}%` }} />
       </div>
 
       {result.summary && <p className="mt-4 text-zinc-700 dark:text-zinc-300">{result.summary}</p>}
@@ -408,7 +412,7 @@ function GradeCard({ result }: { result: GradeResult }) {
       )}
 
       {result.modelAnswer && (
-        <div className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-900 dark:bg-indigo-950/50">
+        <div className="mt-5 rounded-xl border border-indigo-200/70 bg-gradient-to-br from-indigo-50/80 to-violet-50/60 p-4 dark:border-indigo-500/25 dark:from-indigo-950/40 dark:to-violet-950/30">
           <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
             Model answer
           </div>

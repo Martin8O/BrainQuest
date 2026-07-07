@@ -53,7 +53,7 @@ export default function TutorSettingsClient() {
   }
 
   return (
-    <section className="my-8 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+    <section className="bq-card my-8 rounded-2xl p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">AI tutor</h2>
@@ -83,10 +83,10 @@ export default function TutorSettingsClient() {
               key={p.id}
               type="button"
               onClick={() => patch({ provider: p.id })}
-              className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition ${
+              className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition duration-200 ${
                 on
-                  ? "border-indigo-500 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-950/40"
-                  : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-700 dark:hover:border-zinc-600"
+                  ? "border-indigo-400/70 bg-gradient-to-br from-indigo-50/80 to-violet-50/60 shadow-md shadow-indigo-500/10 dark:border-indigo-400/50 dark:from-indigo-950/40 dark:to-violet-950/30"
+                  : "border-zinc-200/90 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-sm dark:border-white/10 dark:hover:border-white/20"
               }`}
             >
               <Icon className={`h-5 w-5 ${on ? "text-indigo-600 dark:text-indigo-400" : "text-zinc-400"}`} strokeWidth={2} />
@@ -107,7 +107,7 @@ export default function TutorSettingsClient() {
             onChange={(e) => patch({ model: e.target.value })}
             spellCheck={false}
             placeholder={active.modelHint}
-            className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-zinc-700 dark:bg-zinc-950"
+            className="mt-1 w-full rounded-lg border border-zinc-300/80 bg-white/80 px-3 py-2 font-mono text-sm shadow-inner outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 dark:border-white/15 dark:bg-zinc-950/60 dark:focus:border-indigo-400/60 dark:focus:ring-indigo-400/25"
           />
         </label>
 
@@ -122,7 +122,7 @@ export default function TutorSettingsClient() {
               onChange={(e) => patch({ baseUrl: e.target.value })}
               spellCheck={false}
               placeholder={active.baseHint}
-              className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-zinc-700 dark:bg-zinc-950"
+              className="mt-1 w-full rounded-lg border border-zinc-300/80 bg-white/80 px-3 py-2 font-mono text-sm shadow-inner outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 dark:border-white/15 dark:bg-zinc-950/60 dark:focus:border-indigo-400/60 dark:focus:ring-indigo-400/25"
             />
           </label>
         )}
@@ -137,7 +137,7 @@ export default function TutorSettingsClient() {
               spellCheck={false}
               autoComplete="off"
               placeholder="sk-…"
-              className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-zinc-700 dark:bg-zinc-950"
+              className="mt-1 w-full rounded-lg border border-zinc-300/80 bg-white/80 px-3 py-2 font-mono text-sm shadow-inner outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 dark:border-white/15 dark:bg-zinc-950/60 dark:focus:border-indigo-400/60 dark:focus:ring-indigo-400/25"
             />
           </label>
         )}
@@ -146,8 +146,8 @@ export default function TutorSettingsClient() {
       {cfg.provider === "ollama" && (
         <p className="mt-3 text-xs text-zinc-500">
           Browser → Ollama needs Ollama to allow this origin: set{" "}
-          <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">OLLAMA_ORIGINS</code> (e.g.{" "}
-          <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">*</code>) and restart Ollama.
+          <code className="rounded bg-zinc-900/5 px-1 dark:bg-white/10">OLLAMA_ORIGINS</code> (e.g.{" "}
+          <code className="rounded bg-zinc-900/5 px-1 dark:bg-white/10">*</code>) and restart Ollama.
         </p>
       )}
 
@@ -155,7 +155,7 @@ export default function TutorSettingsClient() {
         type="button"
         onClick={onSave}
         disabled={!cfg.model.trim()}
-        className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+        className="btn-primary mt-4 inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
       >
         <Save className="h-4 w-4" /> Save tutor settings
       </button>

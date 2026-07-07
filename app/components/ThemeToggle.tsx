@@ -43,7 +43,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={label}
       title={label}
-      className="grid h-9 w-9 place-items-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+      className="grid h-9 w-9 place-items-center rounded-full text-zinc-500 transition duration-200 hover:scale-105 hover:bg-zinc-900/5 hover:text-amber-500 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-amber-300"
     >
       {/* Icon shows the theme you'd switch TO. */}
       {dark ? <Sun className="h-[18px] w-[18px]" strokeWidth={2} /> : <Moon className="h-[18px] w-[18px]" strokeWidth={2} />}

@@ -34,27 +34,30 @@ function NoteView() {
     <main className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-8 sm:py-14">
       <Link
         href="/session"
-        className="mb-6 inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+        className="btn-primary mb-6 inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold"
       >
         <ArrowLeft className="h-4 w-4" /> Back to session
       </Link>
 
       {!note || md == null ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="bq-card rounded-2xl p-8 text-center">
           <h2 className="text-lg font-semibold">Note not found</h2>
           <p className="mt-2 text-sm text-zinc-500">This note isn’t in the loaded pack.</p>
         </div>
       ) : (
-        <>
+        <div className="bq-card bq-topline relative overflow-hidden rounded-3xl p-6 sm:p-8">
           <div className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-zinc-400">
-            <FileText className="h-4 w-4" /> {note.kind === "learning" ? "Learning note" : "Concept"}
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-indigo-500/10 text-indigo-500 dark:bg-indigo-400/15 dark:text-indigo-400">
+              <FileText className="h-4 w-4" />
+            </span>
+            {note.kind === "learning" ? "Learning note" : "Concept"}
             {note.kind === "learning" && note.date && <span className="font-mono normal-case">· {note.date}</span>}
           </div>
 
-          <article className="prose prose-zinc max-w-none dark:prose-invert prose-headings:scroll-mt-20 prose-pre:bg-zinc-900 prose-pre:text-zinc-100">
+          <article className="prose prose-zinc max-w-none dark:prose-invert prose-headings:scroll-mt-20 prose-pre:bg-zinc-900 prose-pre:text-zinc-100 dark:prose-pre:bg-zinc-950/80">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{stripWikilinks(md)}</ReactMarkdown>
           </article>
-        </>
+        </div>
       )}
     </main>
   );

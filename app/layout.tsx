@@ -27,8 +27,8 @@ export const metadata: Metadata = {
 // safe-area padding so the floating nav and content stay clear of it. themeColor tints the status bar.
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#f8f8fc" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090c" },
   ],
   viewportFit: "cover",
 };

@@ -55,17 +55,17 @@ export default function Home() {
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
       <header className="mb-10 text-center">
-        <div className="mb-3 inline-flex items-center gap-2.5">
-          <span className="level-gem grid h-11 w-11 place-items-center rounded-2xl text-white">
+        <div className="mb-3 inline-flex items-center gap-3">
+          <span className="level-gem grid h-12 w-12 place-items-center rounded-2xl text-white">
             <Brain className="h-6 w-6" strokeWidth={2} />
           </span>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">BrainQuest</h1>
+          <h1 className="text-gradient text-4xl font-extrabold tracking-tight sm:text-5xl">BrainQuest</h1>
         </div>
         <p className="mx-auto max-w-2xl text-zinc-600 dark:text-zinc-400">
-          Your <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-[0.85em] dark:bg-zinc-800">vault</code> vault,
+          Your <code className="rounded-md bg-zinc-900/5 px-1.5 py-0.5 text-[0.85em] dark:bg-white/10">vault</code> vault,
           harvested into cards, recall prompts, and a concept graph — the raw material for the spaced-repetition game.
         </p>
-        <p className="mt-3 inline-flex items-center gap-1.5 font-mono text-xs text-zinc-400">
+        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-zinc-900/5 bg-zinc-900/[0.03] px-3 py-1 font-mono text-xs text-zinc-400 dark:border-white/5 dark:bg-white/5">
           <FolderOpen className="h-3.5 w-3.5" /> {vault.vaultPath}
         </p>
       </header>
@@ -112,7 +112,7 @@ export default function Home() {
       </div>
 
       {!vault.ok && (
-        <div className="mb-8 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+        <div className="mb-8 rounded-xl border border-red-300/70 bg-red-50/80 p-4 text-sm text-red-800 backdrop-blur dark:border-red-500/30 dark:bg-red-950/50 dark:text-red-200">
           Could not read the vault. {vault.error}
         </div>
       )}
@@ -162,28 +162,36 @@ export default function Home() {
 /** Per-accent class sets — written as literal strings so Tailwind's JIT keeps them. */
 const TONES = {
   indigo: {
-    border: "border-indigo-200 hover:border-indigo-300 dark:border-indigo-900/70 dark:hover:border-indigo-700",
-    bg: "bg-indigo-50/50 dark:bg-indigo-950/20",
-    icon: "bg-indigo-600 text-white",
-    stat: "text-indigo-700 dark:text-indigo-300",
+    border: "border-indigo-200/80 hover:border-indigo-400/70 dark:border-indigo-500/25 dark:hover:border-indigo-400/50",
+    bg: "bg-white/70 dark:bg-indigo-950/20",
+    glow: "hover:shadow-xl hover:shadow-indigo-500/15",
+    blob: "bg-indigo-500/15 group-hover:bg-indigo-500/25",
+    icon: "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-md shadow-indigo-500/30",
+    stat: "text-indigo-600 dark:text-indigo-300",
   },
   emerald: {
-    border: "border-emerald-200 hover:border-emerald-300 dark:border-emerald-900/70 dark:hover:border-emerald-700",
-    bg: "bg-emerald-50/50 dark:bg-emerald-950/20",
-    icon: "bg-emerald-600 text-white",
-    stat: "text-emerald-700 dark:text-emerald-300",
+    border: "border-emerald-200/80 hover:border-emerald-400/70 dark:border-emerald-500/25 dark:hover:border-emerald-400/50",
+    bg: "bg-white/70 dark:bg-emerald-950/20",
+    glow: "hover:shadow-xl hover:shadow-emerald-500/15",
+    blob: "bg-emerald-500/15 group-hover:bg-emerald-500/25",
+    icon: "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/30",
+    stat: "text-emerald-600 dark:text-emerald-300",
   },
   violet: {
-    border: "border-violet-200 hover:border-violet-300 dark:border-violet-900/70 dark:hover:border-violet-700",
-    bg: "bg-violet-50/50 dark:bg-violet-950/20",
-    icon: "bg-violet-600 text-white",
-    stat: "text-violet-700 dark:text-violet-300",
+    border: "border-violet-200/80 hover:border-violet-400/70 dark:border-violet-500/25 dark:hover:border-violet-400/50",
+    bg: "bg-white/70 dark:bg-violet-950/20",
+    glow: "hover:shadow-xl hover:shadow-violet-500/15",
+    blob: "bg-violet-500/15 group-hover:bg-violet-500/25",
+    icon: "bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-md shadow-violet-500/30",
+    stat: "text-violet-600 dark:text-violet-300",
   },
   fuchsia: {
-    border: "border-fuchsia-200 hover:border-fuchsia-300 dark:border-fuchsia-900/70 dark:hover:border-fuchsia-700",
-    bg: "bg-fuchsia-50/50 dark:bg-fuchsia-950/20",
-    icon: "bg-fuchsia-600 text-white",
-    stat: "text-fuchsia-700 dark:text-fuchsia-300",
+    border: "border-fuchsia-200/80 hover:border-fuchsia-400/70 dark:border-fuchsia-500/25 dark:hover:border-fuchsia-400/50",
+    bg: "bg-white/70 dark:bg-fuchsia-950/20",
+    glow: "hover:shadow-xl hover:shadow-fuchsia-500/15",
+    blob: "bg-fuchsia-500/15 group-hover:bg-fuchsia-500/25",
+    icon: "bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 text-white shadow-md shadow-fuchsia-500/30",
+    stat: "text-fuchsia-600 dark:text-fuchsia-300",
   },
 } as const;
 
@@ -208,18 +216,25 @@ function NavCard({
   return (
     <Link
       href={href}
-      className={`group flex flex-col gap-4 rounded-2xl border ${t.border} ${t.bg} p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md`}
+      className={`bq-lift group relative flex flex-col gap-4 overflow-hidden rounded-2xl border ${t.border} ${t.bg} ${t.glow} p-5 shadow-sm`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${t.icon} shadow-sm`}>
+      {/* Soft accent glow drifting out of the corner — brightens on hover. */}
+      <span
+        aria-hidden
+        className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full blur-2xl transition-colors duration-300 ${t.blob}`}
+      />
+      <div className="relative flex items-start justify-between gap-3">
+        <span
+          className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${t.icon} transition-transform duration-200 group-hover:scale-105`}
+        >
           <Icon className="h-5 w-5" strokeWidth={2} />
         </span>
         <div className="text-right leading-none">
-          <div className={`text-2xl font-bold tabular-nums ${t.stat}`}>{stat}</div>
-          <div className="mt-1 text-[11px] uppercase tracking-wide text-zinc-400">{unit}</div>
+          <div className={`text-3xl font-bold tabular-nums ${t.stat}`}>{stat}</div>
+          <div className="mt-1.5 text-[11px] font-medium uppercase tracking-wider text-zinc-400">{unit}</div>
         </div>
       </div>
-      <div>
+      <div className="relative">
         <div className="flex items-center gap-1 text-base font-semibold">
           {title}
           <ArrowRight className="h-4 w-4 -translate-x-1 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100" />
@@ -255,32 +270,32 @@ function SectionHeading({
 
 /** Tinted icon chip per stat — literal class strings so Tailwind's JIT keeps them. */
 const STAT_TONES: Record<string, string> = {
-  sky: "bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-400",
-  amber: "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
-  indigo: "bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400",
-  fuchsia: "bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-950 dark:text-fuchsia-400",
-  violet: "bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400",
+  sky: "bg-sky-500/10 text-sky-600 dark:bg-sky-400/15 dark:text-sky-400",
+  amber: "bg-amber-500/10 text-amber-600 dark:bg-amber-400/15 dark:text-amber-400",
+  indigo: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/15 dark:text-indigo-400",
+  fuchsia: "bg-fuchsia-500/10 text-fuchsia-600 dark:bg-fuchsia-400/15 dark:text-fuchsia-400",
+  violet: "bg-violet-500/10 text-violet-600 dark:bg-violet-400/15 dark:text-violet-400",
 };
 
 function Stat({ icon: Icon, label, value, tone }: { icon: LucideIcon; label: string; value: number; tone: keyof typeof STAT_TONES }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700">
+    <div className="bq-lift rounded-2xl border border-zinc-200/80 bg-white/70 p-4 shadow-sm hover:border-zinc-300 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-white/20">
       <span className={`grid h-8 w-8 place-items-center rounded-lg ${STAT_TONES[tone]}`}>
         <Icon className="h-4 w-4" strokeWidth={2} />
       </span>
       <div className="mt-3 text-[1.75rem] font-bold leading-none tabular-nums">{value}</div>
-      <div className="mt-1.5 text-xs font-medium text-zinc-500">{label}</div>
+      <div className="mt-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">{label}</div>
     </div>
   );
 }
 
 function CardPreview({ card }: { card: Card }) {
   return (
-    <li className="flex flex-col rounded-xl border border-zinc-200 bg-white p-3.5 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700">
+    <li className="flex flex-col rounded-xl border border-zinc-200/80 bg-white/70 p-3.5 shadow-sm transition duration-200 hover:border-indigo-300/70 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-indigo-400/40">
       <div className="font-medium">{card.front}</div>
       <p className="mt-1 line-clamp-3 text-sm text-zinc-600 dark:text-zinc-400">{card.back}</p>
       {card.conceptLink && (
-        <span className="mt-2 inline-flex items-center gap-1 self-start rounded-md bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+        <span className="mt-2 inline-flex items-center gap-1 self-start rounded-md bg-indigo-500/10 px-1.5 py-0.5 text-xs font-medium text-indigo-600 dark:bg-indigo-400/15 dark:text-indigo-300">
           <Link2 className="h-3 w-3" /> {card.conceptLink}
         </span>
       )}
@@ -290,13 +305,13 @@ function CardPreview({ card }: { card: Card }) {
 
 function LearningRow({ note }: { note: LearningNote }) {
   return (
-    <li className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3.5 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 sm:flex-row sm:items-center sm:justify-between">
+    <li className="flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-white/70 p-3.5 shadow-sm transition duration-200 hover:border-zinc-300 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-white/20 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="truncate font-medium">{note.title}</div>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
           {note.date && <span className="font-mono">{note.date}</span>}
           {note.projects.map((p) => (
-            <span key={p} className="rounded-md bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">
+            <span key={p} className="rounded-md bg-zinc-900/5 px-1.5 py-0.5 dark:bg-white/10">
               #{p}
             </span>
           ))}
@@ -316,7 +331,7 @@ function LearningRow({ note }: { note: LearningNote }) {
 
 function ConceptCard({ note }: { note: ConceptNote }) {
   return (
-    <li className="flex flex-col rounded-xl border border-zinc-200 bg-white p-3.5 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700">
+    <li className="flex flex-col rounded-xl border border-zinc-200/80 bg-white/70 p-3.5 shadow-sm transition duration-200 hover:border-violet-300/70 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-violet-400/40">
       <div className="flex items-baseline justify-between gap-2">
         <span className="truncate font-medium">{note.title}</span>
         <span

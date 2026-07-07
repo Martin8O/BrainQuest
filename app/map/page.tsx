@@ -40,15 +40,18 @@ function MapView() {
       {focus && (
         <Link
           href="/session"
-          className="mb-6 inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="btn-primary mb-6 inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold"
         >
           <ArrowLeft className="h-4 w-4" /> Back to session
         </Link>
       )}
 
       <header className="mb-6">
-        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-          <Network className="h-6 w-6 text-violet-500" strokeWidth={2} /> Skill tree
+        <h1 className="flex items-center gap-2.5 text-2xl font-bold tracking-tight sm:text-3xl">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md shadow-violet-500/30">
+            <Network className="h-5 w-5" strokeWidth={2} />
+          </span>
+          Skill tree
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
           Every concept and how it connects — where you are vs. everything ahead.

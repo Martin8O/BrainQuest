@@ -33,10 +33,30 @@ import type { SessionArea, SessionCard } from "./types";
 
 /** The four grade buttons, left→hardest to right→easiest, with their keyboard shortcut. */
 const GRADES: { grade: Grade; label: string; hint: string; cls: string }[] = [
-  { grade: "again", label: "Again", hint: "1", cls: "bg-red-600 hover:bg-red-500" },
-  { grade: "hard", label: "Hard", hint: "2", cls: "bg-amber-600 hover:bg-amber-500" },
-  { grade: "good", label: "Good", hint: "3", cls: "bg-sky-600 hover:bg-sky-500" },
-  { grade: "easy", label: "Easy", hint: "4", cls: "bg-emerald-600 hover:bg-emerald-500" },
+  {
+    grade: "again",
+    label: "Again",
+    hint: "1",
+    cls: "bg-gradient-to-b from-rose-500 to-red-600 shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/35 hover:brightness-110",
+  },
+  {
+    grade: "hard",
+    label: "Hard",
+    hint: "2",
+    cls: "bg-gradient-to-b from-amber-500 to-orange-600 shadow-md shadow-amber-500/25 hover:shadow-lg hover:shadow-amber-500/35 hover:brightness-110",
+  },
+  {
+    grade: "good",
+    label: "Good",
+    hint: "3",
+    cls: "bg-gradient-to-b from-sky-500 to-blue-600 shadow-md shadow-sky-500/25 hover:shadow-lg hover:shadow-sky-500/35 hover:brightness-110",
+  },
+  {
+    grade: "easy",
+    label: "Easy",
+    hint: "4",
+    cls: "bg-gradient-to-b from-emerald-500 to-green-600 shadow-md shadow-emerald-500/25 hover:shadow-lg hover:shadow-emerald-500/35 hover:brightness-110",
+  },
 ];
 
 const AREAS_KEY = "bq.session.areas";
@@ -251,7 +271,7 @@ export default function SessionClient({
       <AreaFilter areas={areas} enabled={enabled} onToggle={toggleArea} />
 
       {poolEmpty ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="bq-card rounded-2xl p-8 text-center">
           <div className="text-3xl">🗂️</div>
           <p className="mt-3 text-zinc-600 dark:text-zinc-400">Turn on at least one area above to review.</p>
         </div>
@@ -262,7 +282,7 @@ export default function SessionClient({
           {/* Meta: area · source note (→ reader) · progress count */}
           <div className="mb-2 flex items-center justify-between gap-3 text-xs">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+              <span className="shrink-0 rounded-full bg-indigo-500/10 px-2 py-0.5 font-medium text-indigo-600 dark:bg-indigo-400/15 dark:text-indigo-300">
                 {card!.areaLabel}
               </span>
               <Link
@@ -278,15 +298,15 @@ export default function SessionClient({
               {reviewed} done · {remaining} left
             </span>
           </div>
-          <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+          <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-zinc-900/10 shadow-inner dark:bg-white/10">
             <div
-              className="h-full rounded-full bg-indigo-500 transition-all"
+              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 shadow-[0_0_8px_-1px_rgba(99,102,241,0.7)] transition-all duration-500"
               style={{ width: `${(reviewed / (reviewed + remaining)) * 100}%` }}
             />
           </div>
 
           {/* The card */}
-          <div className="flex min-h-[16rem] flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
+          <div className="bq-card bq-topline relative flex min-h-[16rem] flex-col overflow-hidden rounded-3xl p-6 sm:p-8">
             <div className="flex-1">
               <div className="text-xl font-semibold sm:text-2xl">{card!.front}</div>
 
@@ -314,9 +334,9 @@ export default function SessionClient({
               {!flipped ? (
                 <button
                   onClick={() => setFlipped(true)}
-                  className="w-full rounded-xl bg-zinc-900 py-3 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  className="btn-primary w-full rounded-xl py-3 text-sm font-semibold"
                 >
-                  Reveal answer <span className="opacity-60">(Space)</span>
+                  Reveal answer <span className="opacity-70">(Space)</span>
                 </button>
               ) : (
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -327,7 +347,7 @@ export default function SessionClient({
                         key={g.grade}
                         onClick={() => void handleGrade(g.grade)}
                         disabled={pending}
-                        className={`flex flex-col items-center rounded-xl py-3 text-sm font-medium text-white transition disabled:opacity-50 ${g.cls}`}
+                        className={`flex flex-col items-center rounded-xl py-3 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0 ${g.cls}`}
                       >
                         <span>
                           {g.label} <span className="opacity-60">({g.hint})</span>
@@ -342,18 +362,18 @@ export default function SessionClient({
 
             {/* Footer doorways — highlighted + centered once revealed */}
             {flipped && (
-              <div className="mt-5 flex flex-wrap justify-center gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+              <div className="mt-5 flex flex-wrap justify-center gap-2 border-t border-zinc-900/5 pt-4 dark:border-white/5">
                 <Link
                   href={`/note?slug=${encodeURIComponent(card!.sourceSlug)}`}
                   onClick={stashResume}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-700"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300/80 bg-white/80 px-3.5 py-1.5 text-sm font-medium text-zinc-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:text-indigo-700 hover:shadow-md dark:border-white/15 dark:bg-white/5 dark:text-zinc-200 dark:hover:border-indigo-400/50 dark:hover:text-indigo-300"
                 >
                   <FileText className="h-4 w-4" /> Read the full note
                 </Link>
                 <Link
                   href={`/tutor?from=session&source=${encodeURIComponent(card!.sourceSlug)}`}
                   onClick={stashResume}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-700"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300/80 bg-white/80 px-3.5 py-1.5 text-sm font-medium text-zinc-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-fuchsia-300 hover:text-fuchsia-700 hover:shadow-md dark:border-white/15 dark:bg-white/5 dark:text-zinc-200 dark:hover:border-fuchsia-400/50 dark:hover:text-fuchsia-300"
                 >
                   <GraduationCap className="h-4 w-4" /> Practice in the tutor
                 </Link>
@@ -385,7 +405,7 @@ function ConceptBlock({
 }) {
   const focus = concept?.title ?? front;
   return (
-    <div className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-900 dark:bg-indigo-950/40">
+    <div className="mt-5 rounded-xl border border-indigo-200/70 bg-gradient-to-br from-indigo-50/80 to-violet-50/60 p-4 dark:border-indigo-500/25 dark:from-indigo-950/40 dark:to-violet-950/30">
       <div className="flex flex-wrap items-center justify-between gap-2">
         {concept ? (
           <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
@@ -399,14 +419,14 @@ function ConceptBlock({
         <div className="flex items-center gap-2 text-xs">
           <Link
             href={`/map?focus=${encodeURIComponent(focus)}`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-3 py-1.5 font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-200 dark:bg-indigo-900/60 dark:text-indigo-200 dark:hover:bg-indigo-900"
+            className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/15 px-3 py-1.5 font-semibold text-indigo-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-indigo-500/25 hover:shadow-md hover:shadow-indigo-500/20 dark:bg-indigo-400/20 dark:text-indigo-200 dark:hover:bg-indigo-400/30"
           >
             <Network className="h-4 w-4 text-indigo-500 dark:text-indigo-400" /> Skill tree
           </Link>
           <button
             onClick={onExplain}
             disabled={explain.loading}
-            className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 font-semibold text-amber-700 shadow-sm transition hover:bg-amber-200 disabled:opacity-50 dark:bg-amber-900/50 dark:text-amber-200 dark:hover:bg-amber-900"
+            className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1.5 font-semibold text-amber-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-amber-500/25 hover:shadow-md hover:shadow-amber-500/20 disabled:opacity-50 dark:bg-amber-400/20 dark:text-amber-200 dark:hover:bg-amber-400/30"
           >
             {explain.loading ? (
               <Loader2 className="h-4 w-4 animate-spin text-amber-500 dark:text-amber-400" />
@@ -451,10 +471,10 @@ function NextChips({
               key={r}
               onClick={() => onPick(on ? null : r)}
               aria-pressed={on}
-              className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+              className={`rounded-full px-2.5 py-1 text-xs font-medium transition duration-200 ${
                 on
-                  ? "bg-violet-600 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-sm shadow-violet-500/30"
+                  : "bg-zinc-900/5 text-zinc-600 hover:bg-zinc-900/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
               }`}
             >
               {r}
@@ -485,7 +505,12 @@ function FinishedScreen({
   const leveledUp = gamification != null && gamification.level.level > levelBefore;
   return (
     <div>
-      <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-8 text-center dark:border-emerald-900 dark:bg-emerald-950">
+      <div className="relative overflow-hidden rounded-3xl border border-emerald-300/70 bg-emerald-50/80 p-8 text-center shadow-xl shadow-emerald-500/10 backdrop-blur-md dark:border-emerald-500/30 dark:bg-emerald-950/50">
+        {/* Celebration glow behind the content. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-0 h-40 w-72 -translate-x-1/2 rounded-full bg-emerald-400/20 blur-3xl"
+        />
         {leveledUp ? (
           <div className="unlock-pop">
             <div className="halo mx-auto grid h-16 w-16 place-items-center rounded-2xl text-2xl level-gem text-white">
@@ -518,13 +543,13 @@ function FinishedScreen({
       {gamification && <Hud g={gamification} className="mt-4" />}
 
       <div className="mt-5 text-center">
-        <Link
-          href="/session"
-          className="inline-block rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
+        <Link href="/session" className="btn-primary inline-block rounded-xl px-4 py-2 text-sm font-semibold">
           Check for more due
         </Link>
-        <Link href="/" className="ml-3 inline-block text-sm text-zinc-500 underline hover:text-zinc-700">
+        <Link
+          href="/"
+          className="ml-3 inline-block text-sm text-zinc-500 underline underline-offset-4 transition hover:text-zinc-700 dark:hover:text-zinc-300"
+        >
           Back to overview
         </Link>
       </div>
