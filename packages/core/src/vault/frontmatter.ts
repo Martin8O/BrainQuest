@@ -1,5 +1,5 @@
 // Minimal YAML-frontmatter support — a format-tolerance win for the M1 compiler, so a pack can be built
-// from notes that carry metadata as frontmatter (common outside Obsidian) instead of `vault`'s inline
+// from notes that carry metadata as frontmatter (common outside Obsidian) instead of the vault's inline
 // `#tags` + `Belongs to:` convention. Deliberately tiny (no YAML dependency): it understands scalars,
 // inline `[a, b]` lists, and block `- item` lists — enough for `tags`, `hub`/`belongs_to`, and `date`.
 // Additive: notes with no frontmatter are returned unchanged, so the existing vault keeps parsing identically.

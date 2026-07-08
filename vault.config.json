@@ -1,5 +1,5 @@
 {
-  "_comment": "BrainQuest config — the single source of truth for WHERE the vault is and HOW to read it (path, harvested headings, tag scheme, tutor areas) plus the AI tutor backend. The Settings page (/settings) writes the vaultPath and the tutor section here; nothing else is written and the vault itself stays read-only. API keys never live here — they go in local/.env. Override the path per-machine with the BRAINQUEST_VAULT_PATH env var (the repo is synced via GitHub, so this absolute path is machine-specific). Any omitted section falls back to the vault defaults baked into lib/vault/config.ts.",
+  "_comment": "BrainQuest config — the single source of truth for WHERE the vault is and HOW to read it (path, harvested headings, tag scheme, tutor areas) plus the AI tutor backend. The Settings page (/settings) writes the vaultPath and the tutor section here; nothing else is written and the vault itself stays read-only. API keys never live here — they go in local/.env. Override the path per-machine with the BRAINQUEST_VAULT_PATH env var (the repo is synced via GitHub, so this absolute path is machine-specific). This ships as an EXAMPLE config — set vaultPath and areas.labels to your own vault. Any omitted section falls back to the defaults baked into lib/vault/config.ts.",
   "vaultPath": "D:/path/to/your/vault",
   "folders": {
     "learning": "learning",
@@ -18,8 +18,7 @@
     "labels": {
       "brainquest": "BrainQuest",
       "example-project": "Example Project",
-      "advanced-topic": "Advanced Topic",
-      "advanced-topic": "RL"
+      "advanced-topic": "Advanced Topic"
     },
     "offByDefault": [
       "advanced-topic"

@@ -2,6 +2,16 @@
 # Claude's durable memory + working notes live here (NOT in ~/.claude or C:\).
 local/
 
+# ── Internal dev scaffolding — kept local, NOT published (public repo hygiene) ──
+# Changelog, teaching protocol, and Claude Code config are dev-process files, not product.
+/dev_history.md
+/LEARNING_PROTOCOL.md
+/.claude/
+
+# ── Runtime app state — personal learning progress, gitignored (never shipped) ──
+# The app writes review/variation state here per-device; data/.gitkeep preserves the dir.
+/data/*.json
+
 # ── Personal Claude Code settings (machine paths; enforced guardrails) ──────
 .claude/settings.local.json
 

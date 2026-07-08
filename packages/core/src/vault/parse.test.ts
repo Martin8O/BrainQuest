@@ -216,12 +216,12 @@ describe("YAML frontmatter tolerance (M1)", () => {
     const md = [
       "---",
       'tags: [learning, "#project/advanced-topic"]',
-      'hub: "[[RL All-in-One Dashboard]]"',
+      'hub: "[[Advanced Topic Dashboard]]"',
       "---",
       "# FM-only note",
     ].join("\n");
     const note = parseLearningNote("no-date", "/x.md", md, enCfg);
-    expect(note.hub).toBe("RL All-in-One Dashboard"); // brackets stripped → matches inline-hub spelling
+    expect(note.hub).toBe("Advanced Topic Dashboard"); // brackets stripped → matches inline-hub spelling
     expect(note.projects).toEqual(["project/advanced-topic"]); // # stripped → filter matches
   });
 

@@ -7,7 +7,7 @@
 Turn an Obsidian knowledge vault into an active learning game — **spaced repetition + a skill-tree of
 concepts + an AI tutor** — so you actually *absorb* what you've written down, not just store it.
 
-Built as a learning project by Martin (a learner learning toward an AI/tech career) together with an AI
+Built as a learning project by Martin, working toward an AI/tech career, together with an AI
 coding agent. It reads a cross-project "second brain" vault **read-only** and turns its dated learning notes
 and atomic concept notes into scheduled flashcards, recall prompts, and a visual mastery map.
 
@@ -48,7 +48,7 @@ and atomic concept notes into scheduled flashcards, recall prompts, and a visual
 
 ## Stack
 Next.js (App Router) + TypeScript + Tailwind, with [lucide](https://lucide.dev) icons. Review/progress state is
-JSON under `data/` (committed, synced). The vault stays read-only. The AI tutor talks to a local
+JSON under `data/` (kept per-device, gitignored). The vault stays read-only. The AI tutor talks to a local
 [Ollama](https://ollama.com) server by default, or a paid hosted API. Unit tests run on [Vitest](https://vitest.dev).
 
 ## Run
@@ -68,8 +68,8 @@ The provider/model/base-URL live in `vault.config.json` (`tutor` section) — on
 backend reachable, the rest of the app still works and the tutor shows a friendly "offline" message.
 
 ## Point at another vault
-BrainQuest defaults to one specific `vault`, but it reads *how* to read a vault from `vault.config.json` —
-so you can point it at a different Obsidian brain by editing config, not code. No data migration: your review
+BrainQuest ships with an example `vault.config.json`, and it reads *how* to read a vault from that file —
+so you can point it at any Obsidian brain by editing config, not code. No data migration: your review
 progress in `data/` is untouched, and the vault itself is only ever read.
 
 The quickest way is the in-app **Settings page** (`/settings`, reachable from the floating menu on every page): paste a
@@ -87,7 +87,7 @@ Or edit `vault.config.json` directly:
 - `areas` — friendly `labels` per project slug for the tutor's category filter, and `offByDefault` slugs hidden
   until you opt in.
 
-Any section you omit falls back to the built-in `vault` defaults, so a minimal config still boots.
+Any section you omit falls back to the built-in defaults, so a minimal config still boots.
 
 ## Note format (what the app reads & links)
 BrainQuest harvests plain Markdown — no special plugin. It reads two folders (names from `vault.config.json` →
@@ -154,4 +154,6 @@ unit-tested — it's exercised by hand in the tutor UI.
 ## Docs
 - `docs/architecture.md` — how it works.
 - `docs/adr.md` — the key decisions and why.
-- `dev_history.md` — changelog.
+
+## Author & license
+Built by Martin — [svobodamartin.dev](https://svobodamartin.dev). Released under the [MIT License](LICENSE).

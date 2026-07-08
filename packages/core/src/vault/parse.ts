@@ -1,5 +1,5 @@
 // Pure markdown parsing + harvesting for vault notes — NO file-system access, so it stays
-// unit-testable (E2). `vault` uses inline #tags and a `Patří k: [[Hub]]` line; the M1 compiler also
+// unit-testable (E2). The vault uses inline #tags and a `Patří k: [[Hub]]` line; the M1 compiler also
 // tolerates YAML frontmatter (see frontmatter.ts) as an alternative metadata source, merged additively.
 import type { VaultConfig } from "./config";
 import { frontmatterList, frontmatterScalar, splitFrontmatter } from "./frontmatter";

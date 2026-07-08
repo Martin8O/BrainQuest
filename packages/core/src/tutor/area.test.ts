@@ -1,14 +1,14 @@
 // Tests for the tutor area filter (D2.1). It maps a note's project tag to a focusable "area" so the
-// cross-project vault doesn't drown the learner; the load-bearing rule is that RL is OFF by default while
-// everything else is ON, and a note with no project tag still shows up ("other", kept on).
+// cross-project vault doesn't drown the learner; the load-bearing rule is that a niche/deep area is OFF by
+// default while everything else is ON, and a note with no project tag still shows up ("other", kept on).
 import { describe, expect, it } from "vitest";
 import { areaForProjects, type AreaConfig } from "./area";
 
-// The `vault` area config (E1 lifted these out of the module into vault.config.json).
+// An example area config (E1 lifted these out of the module into vault.config.json).
 const cfg: AreaConfig = {
   tags: { projectTagPrefix: "project/" },
   areas: {
-    labels: { brainquest: "BrainQuest", example-project: "Example Project", "advanced-topic": "Advanced Topic", "advanced-topic": "RL" },
+    labels: { brainquest: "BrainQuest", "example-project": "Example Project", "advanced-topic": "Advanced Topic" },
     offByDefault: ["advanced-topic"],
   },
 };
@@ -17,11 +17,10 @@ describe("areaForProjects", () => {
   it("maps known projects to friendly labels, all on by default", () => {
     expect(areaForProjects(["project/brainquest"], cfg)).toEqual({ key: "brainquest", label: "BrainQuest", defaultOn: true });
     expect(areaForProjects(["project/example-project"], cfg)).toMatchObject({ label: "Example Project", defaultOn: true });
-    expect(areaForProjects(["project/advanced-topic"], cfg)).toMatchObject({ label: "Advanced Topic", defaultOn: true });
   });
 
-  it("hides RL by default (the niche/deep area you opt into)", () => {
-    expect(areaForProjects(["project/advanced-topic"], cfg)).toEqual({ key: "advanced-topic", label: "RL", defaultOn: false });
+  it("hides the advanced area by default (the niche/deep area you opt into)", () => {
+    expect(areaForProjects(["project/advanced-topic"], cfg)).toEqual({ key: "advanced-topic", label: "Advanced Topic", defaultOn: false });
   });
 
   it("buckets a note with no project tag into 'other', kept on so nothing silently vanishes", () => {

@@ -10,7 +10,7 @@ export interface VaultConfig {
   /**
    * Section headings to harvest. Each may be a single heading OR a list of accepted aliases — the parser
    * matches a note's heading against ANY of them, so one vault can mix languages and a new brain works in
-   * English out of the box while a Czech brain ([[vault]]) keeps using its headings. The FIRST entry is
+   * English out of the box while a Czech brain keeps using its own headings. The FIRST entry is
    * the "primary" one the UI shows when telling you which heading to add.
    */
   harvest: {
@@ -44,9 +44,9 @@ export interface VaultConfig {
 }
 
 /**
- * Baked structural defaults. vault.config.json is the canonical, full `vault` example a new brain copies;
+ * Baked structural defaults. vault.config.json is the canonical, full example a new brain copies;
  * these defaults only fill in any section a partial config omits, so the app boots instead of crashing on
- * an undefined key. `vault`-specific data (the area `labels` map) lives solely in the JSON — not duplicated here.
+ * an undefined key. Vault-specific data (the area `labels` map) lives solely in the JSON — not duplicated here.
  */
 export const DEFAULTS: VaultConfig = {
   vaultPath: "D:/path/to/your/vault",

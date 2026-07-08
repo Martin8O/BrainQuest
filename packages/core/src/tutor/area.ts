@@ -1,7 +1,7 @@
 // PURE area mapping for the tutor's category filter — no fs, no React, so it's trivially testable and
 // shared by the page (which tags each prompt) and any later config. An "area" = the project a recall
-// prompt's source note belongs to. The vault is cross-project, so without this the tutor mixes RL,
-// Example Project, Advanced Topic and BrainQuest together; the filter lets the learner focus and skip the niche.
+// prompt's source note belongs to. The vault is cross-project, so without this the tutor mixes every
+// project area together; the filter lets the learner focus on some areas and skip the niche/deep ones.
 export interface TutorAreaDef {
   /** Stable key (the project slug without the project-tag prefix), e.g. "brainquest", "advanced-topic". */
   key: string;
@@ -20,7 +20,7 @@ export interface AreaConfig {
 /** Bucket for a note with no project tag at all. */
 const OTHER_KEY = "other";
 
-/** "advanced-topic" → "Example Advanced Topic" (only used for projects without an explicit label). */
+/** "book-notes" → "Book Notes" (only used for projects without an explicit label). */
 function prettify(slug: string): string {
   return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }

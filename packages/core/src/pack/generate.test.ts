@@ -121,7 +121,7 @@ describe("emit → parse round-trip", () => {
     expect(note.cards[0].front).toBe("vector");
     // conceptSlug "vector" → title "Vector" in the wikilink (correct by construction).
     expect(note.cards[0].conceptLink).toBe("Vector");
-    // The back keeps both the gloss and the definition (the `vault` card convention).
+    // The back keeps both the gloss and the definition (the vault card convention).
     expect(note.cards[0].back).toContain("ordered numbers");
     expect(note.cards[0].back).toContain("an ordered list of numbers");
     expect(note.recall.map((r) => r.question)).toEqual(["What is a vector?", "Why do weights matter?"]);

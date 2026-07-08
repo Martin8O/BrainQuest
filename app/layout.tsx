@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "BrainQuest",
-  description: "Turn your vault vault into a spaced-repetition learning game.",
+  description: "Turn your Obsidian vault into a spaced-repetition learning game.",
 };
 
 // M3 (mobile shell): draw under the status bar / notch (`viewport-fit=cover`) — globals.css then adds

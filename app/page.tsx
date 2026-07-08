@@ -62,7 +62,7 @@ export default function Home() {
           <h1 className="text-gradient text-4xl font-extrabold tracking-tight sm:text-5xl">BrainQuest</h1>
         </div>
         <p className="mx-auto max-w-2xl text-zinc-600 dark:text-zinc-400">
-          Your <code className="rounded-md bg-zinc-900/5 px-1.5 py-0.5 text-[0.85em] dark:bg-white/10">vault</code> vault,
+          Your <code className="rounded-md bg-zinc-900/5 px-1.5 py-0.5 text-[0.85em] dark:bg-white/10">Obsidian</code> vault,
           harvested into cards, recall prompts, and a concept graph — the raw material for the spaced-repetition game.
         </p>
         <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-zinc-900/5 bg-zinc-900/[0.03] px-3 py-1 font-mono text-xs text-zinc-400 dark:border-white/5 dark:bg-white/5">
