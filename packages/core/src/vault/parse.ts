@@ -225,7 +225,7 @@ export interface DocSection {
 /**
  * Split one long structured document into notes on its H1 (`# `) headings — each H1 section becomes a note
  * (title = the heading, body = everything until the next H1). Content before the first H1 is ignored.
- * Lets the compiler turn a single authored/AI-generated doc into a pack (masterplan pillar 2).
+ * Lets the compiler turn a single authored/AI-generated doc into a pack.
  */
 export function splitDocIntoNotes(md: string): DocSection[] {
   const { body } = splitFrontmatter(md);

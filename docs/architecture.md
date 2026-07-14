@@ -1,8 +1,7 @@
 # Architecture — BrainQuest
 
 A Next.js + TypeScript app that turns an Obsidian vault (`<vault>`, read-only) into an
-active learning game. This doc is the durable mental model; the "why"
-of decisions in `docs/adr.md`, the backlog in `local/all-prompts.md`.
+active learning game. This doc is the durable mental model of how the pieces fit together.
 
 ## Data flow (end to end)
 ```

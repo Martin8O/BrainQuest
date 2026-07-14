@@ -7,9 +7,9 @@
 Turn an Obsidian knowledge vault into an active learning game — **spaced repetition + a skill-tree of
 concepts + an AI tutor** — so you actually *absorb* what you've written down, not just store it.
 
-Built as a learning project by Martin, working toward an AI/tech career, together with an AI
-coding agent. It reads a cross-project "second brain" vault **read-only** and turns its dated learning notes
-and atomic concept notes into scheduled flashcards, recall prompts, and a visual mastery map.
+Designed and directed by Martin, built with an AI coding agent — a from-scratch Next.js app that
+reads a cross-project "second brain" vault **read-only** and turns its dated learning notes and atomic concept
+notes into scheduled flashcards, recall prompts, and a visual mastery map.
 
 > Status: **feature-complete, hardened (Phase A → F1 + the E3 security/robustness pass).** Live: the vault reader,
 > harvested cards + concept graph, an **FSRS** spaced-repetition scheduler, a daily session, a mastery model, a visual
@@ -153,7 +153,6 @@ unit-tested — it's exercised by hand in the tutor UI.
 
 ## Docs
 - `docs/architecture.md` — how it works.
-- `docs/adr.md` — the key decisions and why.
 
 ## Author & license
 Built by Martin — [svobodamartin.dev](https://svobodamartin.dev). Released under the [MIT License](LICENSE).

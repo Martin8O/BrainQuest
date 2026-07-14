@@ -1,6 +1,6 @@
 # CLAUDE.md — BrainQuest
 
-Lean, current guidance. Pointers, not prose. History → `dev_history.md` (local); rationale → `docs/adr.md`;
+Lean, current guidance. Pointers, not prose. History → `dev_history.md` (local); rationale → `local/adr.md`;
 session resume → `local/SESSION_BOOTSTRAP.md`; teaching layer → `LEARNING_PROTOCOL.md` (§11, local).
 
 ## 1. What this is
@@ -49,7 +49,7 @@ paragraph/bullet (Obsidian renders raw newlines as breaks).
    (Martin's standing call: the pause wastes context). I stop only if genuinely blocked / ambiguous / irreversible.
 2. Execute X, doing the HEAVY verification DURING the prompt (quality gate + drive it live). Martin reviews; we iterate.
 3. Martin: **"X is done"** → LEAN wrap-up: re-run gate, `/code-review` on substantial diffs, add the ADR row
-   (`docs/adr.md`), changelog entry on top of `dev_history.md`, update the `SESSION_BOOTSTRAP.md` "Now" head,
+   (`local/adr.md`), changelog entry on top of `dev_history.md`, update the `SESSION_BOOTSTRAP.md` "Now" head,
    model-fit retro line, scoped commit (+ push only when authorized). Docs land at wrap-up, never silently mid-prompt.
 
 ## 9. Memory — HARD RULE

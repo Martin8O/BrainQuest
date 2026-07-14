@@ -3,7 +3,7 @@
 // and the emit → parse round-trip is proven deterministically (generate.test.ts). The impure orchestrator
 // (tools/generate-pack.mts) makes the LLM calls and writes the files.
 //
-// The design (masterplan pillar 2): AI drafts EDITABLE vault-shaped markdown, a human curates it in Obsidian,
+// The design: AI drafts EDITABLE vault-shaped markdown, a human curates it in Obsidian,
 // and the EXISTING compiler (compile-pack.mts) validates + compiles it. The AI never emits the final pack.json
 // directly — keeping the deterministic, validated path unchanged and the author in the loop.
 //
